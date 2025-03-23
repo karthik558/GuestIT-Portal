@@ -15,8 +15,22 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Download } from "lucide-react";
+import { Calendar as CalendarIcon, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { generatePDF } from "@/utils/pdfExport";
+import { supabase } from "@/integrations/supabase/client";
+
+interface WifiRequest {
+  id: string;
+  name: string;
+  email: string;
+  room_number: string;
+  device_type: string;
+  issue_type: string;
+  description: string;
+  status: string;
+  created_at: Date;
+}
 
 export function ReportGenerator() {
   const [reportType, setReportType] = useState<string>("");
@@ -29,26 +43,44 @@ export function ReportGenerator() {
   });
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     if (!reportType) {
       toast.error("Please select a report type");
       return;
     }
 
-    if (!dateRange.from || !dateRange.to) {
-      toast.error("Please select a date range");
-      return;
-    }
-
     setIsGenerating(true);
 
-    // Simulate report generation with timeout
-    setTimeout(() => {
-      setIsGenerating(false);
-      toast.success("Report generated successfully", {
-        description: "The report has been downloaded to your device.",
+    try {
+      // Fetch data from Supabase
+      const { data, error } = await supabase
+        .from('wifi_requests')
+        .select('*');
+      
+      if (error) throw error;
+      
+      // Format the data
+      const formattedRequests = data.map(request => ({
+        ...request,
+        created_at: new Date(request.created_at),
+      }));
+      
+      // Generate PDF
+      const fileName = await generatePDF(formattedRequests, reportType, dateRange);
+      
+      if (fileName) {
+        toast.success("Report generated successfully", {
+          description: `The report "${fileName}" has been downloaded to your device.`,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error generating report:", error);
+      toast.error("Failed to generate report", {
+        description: error.message || "Please try again later",
       });
-    }, 2000);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -59,7 +91,7 @@ export function ReportGenerator() {
             Report Type
           </label>
           <Select value={reportType} onValueChange={setReportType}>
-            <SelectTrigger id="report-type">
+            <SelectTrigger id="report-type" className="border-primary/20 focus-visible:ring-primary">
               <SelectValue placeholder="Select report type" />
             </SelectTrigger>
             <SelectContent>
@@ -79,7 +111,7 @@ export function ReportGenerator() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="justify-start text-left font-normal w-full md:w-[240px]"
+                  className="justify-start text-left font-normal w-full md:w-[240px] border-primary/20 focus-visible:ring-primary"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {dateRange.from ? (
@@ -102,6 +134,7 @@ export function ReportGenerator() {
                   selected={dateRange}
                   onSelect={setDateRange as any}
                   initialFocus
+                  className="rounded-md border"
                 />
               </PopoverContent>
             </Popover>
@@ -111,18 +144,25 @@ export function ReportGenerator() {
 
       <Button 
         onClick={handleGenerateReport} 
-        disabled={isGenerating || !reportType || !dateRange.from || !dateRange.to}
-        className="w-full md:w-auto"
+        disabled={isGenerating || !reportType}
+        className="w-full md:w-auto bg-primary hover:bg-primary/90"
       >
         {isGenerating ? (
-          "Generating..."
+          <>
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></div>
+            Generating...
+          </>
         ) : (
           <>
-            <Download className="mr-2 h-4 w-4" />
-            Generate Report
+            <FileText className="mr-2 h-4 w-4" />
+            Export to PDF
           </>
         )}
       </Button>
+
+      <div className="text-xs text-muted-foreground mt-2">
+        Generate comprehensive reports for WiFi support activities. Reports include detailed statistics and can be filtered by date range.
+      </div>
     </div>
   );
 }

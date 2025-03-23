@@ -1,14 +1,14 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { UserRole } from "@/types/user";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -17,6 +17,17 @@ export default function Login() {
     email: "",
     password: "",
   });
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate("/admin");
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -47,8 +58,35 @@ export default function Login() {
       
       if (error) throw error;
       
-      toast.success("Login successful");
-      navigate("/admin");
+      // Check if the user has admin role
+      let userRole: UserRole = 'user';
+      
+      // Get user role from metadata or determine it (e.g., could be based on email domain)
+      if (data.user?.user_metadata?.role === 'admin') {
+        userRole = 'admin';
+      } else {
+        // Set role based on email for demonstration
+        // In a real app, you'd check against your database
+        const adminEmails = ['admin@lilac.com', 'admin@example.com'];
+        if (adminEmails.includes(data.user?.email || '')) {
+          // Update the user metadata to include role
+          const { error: updateError } = await supabase.auth.updateUser({
+            data: { role: 'admin' }
+          });
+          
+          if (!updateError) {
+            userRole = 'admin';
+          }
+        }
+      }
+      
+      toast.success(`Login successful. Welcome ${userRole === 'admin' ? 'Administrator' : 'User'}`);
+      
+      if (userRole === 'admin') {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
       
     } catch (error: any) {
       console.error("Login error:", error);
@@ -69,7 +107,7 @@ export default function Login() {
           <div className="text-center">
             <h1 className="heading-1">Admin Login</h1>
             <p className="subtitle mt-2">
-              Login to access the admin dashboard
+              Login to access the Lilac WiFi Support dashboard
             </p>
           </div>
           
@@ -85,6 +123,7 @@ export default function Login() {
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  className="border-primary/20 focus-visible:ring-primary"
                 />
               </div>
               
@@ -98,6 +137,7 @@ export default function Login() {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  className="border-primary/20 focus-visible:ring-primary"
                 />
               </div>
               

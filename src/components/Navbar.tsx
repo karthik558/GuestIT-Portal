@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ModeToggle } from "@/components/ui/mode-toggle";
@@ -11,7 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { UserRole } from "@/types/user";
 
 interface NavbarProps {
   isAdmin?: boolean;
@@ -19,11 +22,72 @@ interface NavbarProps {
 
 export function Navbar({ isAdmin }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
 
-  // This would be replaced with actual auth logic
-  const user = isAdmin 
-    ? { name: "Admin User", image: "", initials: "AU" } 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      
+      if (data.session) {
+        setIsAuthenticated(true);
+        const email = data.session.user.email;
+        if (email) {
+          setUserName(email.split('@')[0]);
+        }
+        
+        // Get user role from metadata or default to 'user'
+        const role = data.session.user.user_metadata?.role as UserRole || 'user';
+        setUserRole(role);
+      } else {
+        setIsAuthenticated(false);
+        setUserRole(null);
+      }
+    };
+    
+    checkAuth();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        setIsAuthenticated(true);
+        const email = session.user.email;
+        if (email) {
+          setUserName(email.split('@')[0]);
+        }
+        
+        // Get user role from metadata or default to 'user'
+        const role = session.user.user_metadata?.role as UserRole || 'user';
+        setUserRole(role);
+      } else if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false);
+        setUserRole(null);
+      }
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Failed to sign out", {
+        description: error.message,
+      });
+    } else {
+      toast.success("Signed out successfully");
+      navigate("/login");
+    }
+  };
+
+  const user = isAuthenticated
+    ? { name: userName || "User", image: "", initials: (userName?.[0] || "U").toUpperCase() } 
     : null;
+    
+  const isAdminUser = userRole === 'admin';
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full animate-slide-down">
@@ -31,11 +95,11 @@ export function Navbar({ isAdmin }: NavbarProps) {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <span className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">W</span>
+              <span className="h-8 w-8 rounded-full violet-gradient flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-lg">L</span>
               </span>
               <span className="text-xl font-display font-semibold tracking-tight">
-                WiFi Helper
+                Lilac WiFi Support
               </span>
             </Link>
           </div>
@@ -45,7 +109,7 @@ export function Navbar({ isAdmin }: NavbarProps) {
             <Link to="/" className="px-3 py-2 text-sm font-medium rounded-md hover:bg-accent">
               Home
             </Link>
-            {isAdmin && (
+            {isAuthenticated && isAdminUser && (
               <Link to="/admin" className="px-3 py-2 text-sm font-medium rounded-md hover:bg-accent">
                 Dashboard
               </Link>
@@ -58,7 +122,7 @@ export function Navbar({ isAdmin }: NavbarProps) {
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user.image} alt={user.name} />
-                      <AvatarFallback>{user.initials}</AvatarFallback>
+                      <AvatarFallback className="bg-primary text-primary-foreground">{user.initials}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -66,15 +130,21 @@ export function Navbar({ isAdmin }: NavbarProps) {
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
                       <p className="font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {userRole === 'admin' ? 'Administrator' : 'User'}
+                      </p>
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin">Dashboard</Link>
-                  </DropdownMenuItem>
+                  {isAdminUser && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin">Dashboard</Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/">Sign out</Link>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -111,7 +181,7 @@ export function Navbar({ isAdmin }: NavbarProps) {
             >
               Home
             </Link>
-            {isAdmin && (
+            {isAuthenticated && isAdminUser && (
               <Link
                 to="/admin"
                 className="block px-3 py-2 text-base font-medium rounded-md hover:bg-accent"
@@ -128,8 +198,12 @@ export function Navbar({ isAdmin }: NavbarProps) {
               <Button
                 variant="ghost"
                 className="w-full mt-2 justify-start"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => {
+                  handleSignOut();
+                  setIsMenuOpen(false);
+                }}
               >
+                <LogOut className="mr-2 h-4 w-4" />
                 Sign out
               </Button>
             )}

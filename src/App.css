@@ -1,8 +1,21 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+}
+
+.violet-gradient {
+  background: linear-gradient(135deg, #6f2c6e 0%, #9b62a9 100%);
+}
+
+.card-gradient {
+  background: linear-gradient(to right, #f7f8fa, #e5e6f0);
+}
+
+.dark .card-gradient {
+  background: linear-gradient(to right, #2d2c3e, #1f1e2c);
 }
 
 .logo {
@@ -12,10 +25,10 @@
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em #6f2c6eaa);
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em #a87dc5aa);
 }
 
 @keyframes logo-spin {
