@@ -1,6 +1,4 @@
 
-import { ModeToggle } from "@/components/ui/mode-toggle";
-
 export function Footer() {
   return (
     <footer className="border-t py-6 md:py-0">
@@ -8,9 +6,6 @@ export function Footer() {
         <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
           © Copyright 2025. All rights reserved. Developed by KARTHIK LAL.
         </p>
-        <div className="flex items-center gap-4">
-          <ModeToggle />
-        </div>
       </div>
     </footer>
   );

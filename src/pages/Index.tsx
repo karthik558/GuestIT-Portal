@@ -17,7 +17,42 @@ export default function Index() {
       <Navbar />
       
       <main className="flex-1">
-        {/* Hero Section */}
+        {/* Request Form Section - Now First */}
+        <section id="request-form" className="py-16 bg-accent/30">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="text-center mb-12">
+              <h2 className="heading-2 mb-2">Request WiFi Assistance</h2>
+              <p className="subtitle max-w-2xl mx-auto">
+                Fill out this form and our IT team will respond promptly to help you get connected.
+              </p>
+            </div>
+            
+            <Tabs defaultValue="guest" className="max-w-3xl mx-auto">
+              <TabsList className="grid w-full grid-cols-2 mb-8">
+                <TabsTrigger value="guest">Guest Request</TabsTrigger>
+                <TabsTrigger value="admin">Admin Access</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="guest">
+                <GuestForm />
+              </TabsContent>
+              
+              <TabsContent value="admin">
+                <div className="form-container text-center py-12">
+                  <h3 className="heading-3 mb-4">Admin Access Required</h3>
+                  <p className="text-muted-foreground mb-6">
+                    You need administrator privileges to access the dashboard and manage WiFi requests.
+                  </p>
+                  <Button asChild>
+                    <Link to="/login">Log In as Admin</Link>
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </section>
+        
+        {/* Hero Section - Now Second */}
         <section className="relative overflow-hidden bg-gradient-to-b from-background to-accent/20 pt-16 pb-24 md:py-24">
           <div className="container mx-auto px-4 sm:px-6 md:flex md:items-center md:justify-between md:space-x-8">
             <div className="md:w-1/2 space-y-6 animate-fade-in">
@@ -53,7 +88,7 @@ export default function Index() {
           </div>
         </section>
         
-        {/* Features Section */}
+        {/* Features Section - Now Third */}
         <section className="py-16 bg-background">
           <div className="container mx-auto px-4 sm:px-6 text-center">
             <h2 className="heading-2 mb-12">How It Works</h2>
@@ -89,41 +124,6 @@ export default function Index() {
                 </p>
               </div>
             </div>
-          </div>
-        </section>
-        
-        {/* Request Form Section */}
-        <section id="request-form" className="py-16 bg-accent/30">
-          <div className="container mx-auto px-4 sm:px-6">
-            <div className="text-center mb-12">
-              <h2 className="heading-2 mb-2">Request WiFi Assistance</h2>
-              <p className="subtitle max-w-2xl mx-auto">
-                Fill out this form and our IT team will respond promptly to help you get connected.
-              </p>
-            </div>
-            
-            <Tabs defaultValue="guest" className="max-w-3xl mx-auto">
-              <TabsList className="grid w-full grid-cols-2 mb-8">
-                <TabsTrigger value="guest">Guest Request</TabsTrigger>
-                <TabsTrigger value="admin">Admin Access</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="guest">
-                <GuestForm />
-              </TabsContent>
-              
-              <TabsContent value="admin">
-                <div className="form-container text-center py-12">
-                  <h3 className="heading-3 mb-4">Admin Access Required</h3>
-                  <p className="text-muted-foreground mb-6">
-                    You need administrator privileges to access the dashboard and manage WiFi requests.
-                  </p>
-                  <Button asChild>
-                    <Link to="/login">Log In as Admin</Link>
-                  </Button>
-                </div>
-              </TabsContent>
-            </Tabs>
           </div>
         </section>
       </main>
