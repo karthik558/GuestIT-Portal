@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -26,25 +27,36 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simple validation
-    if (!formData.email || !formData.password) {
-      toast.error("Please fill in all fields");
+    try {
+      // Simple validation
+      if (!formData.email || !formData.password) {
+        toast.error("Please fill in all fields");
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("Attempting login with:", formData.email);
+      
+      // Use Supabase authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+      
+      console.log("Auth response:", { data, error });
+      
+      if (error) throw error;
+      
+      toast.success("Login successful");
+      navigate("/admin");
+      
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error("Login failed", {
+        description: error.message || "Invalid credentials",
+      });
+    } finally {
       setIsLoading(false);
-      return;
-    }
-    
-    // Demo admin login (in a real app, you would make an API call)
-    if (formData.email === "admin@example.com" && formData.password === "password") {
-      setTimeout(() => {
-        toast.success("Login successful");
-        setIsLoading(false);
-        navigate("/admin");
-      }, 1000);
-    } else {
-      setTimeout(() => {
-        toast.error("Invalid credentials");
-        setIsLoading(false);
-      }, 1000);
     }
   };
 
@@ -69,7 +81,7 @@ export default function Login() {
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="admin@example.com"
+                  placeholder="your-email@example.com"
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -102,7 +114,7 @@ export default function Login() {
               </Button>
               
               <div className="text-center text-xs text-muted-foreground">
-                <p>Demo Admin: admin@example.com / password</p>
+                <p>Sign in with your Supabase user credentials</p>
               </div>
             </form>
           </div>

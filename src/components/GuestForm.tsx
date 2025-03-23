@@ -40,6 +40,13 @@ export function GuestForm() {
     setIsLoading(true);
     
     try {
+      console.log("Submitting form data:", formData);
+      
+      // Validate required fields
+      if (!formData.name || !formData.email || !formData.roomNumber || !formData.deviceType || !formData.issueType) {
+        throw new Error("Please fill in all required fields");
+      }
+      
       // Submit data to Supabase
       const { data, error } = await supabase
         .from('wifi_requests')
@@ -48,12 +55,14 @@ export function GuestForm() {
             name: formData.name,
             email: formData.email,
             room_number: formData.roomNumber,
-            device_type: formData.deviceType as "smartphone" | "laptop" | "tablet" | "other",
-            issue_type: formData.issueType as "connect" | "slow" | "disconnect" | "login" | "other",
+            device_type: formData.deviceType as any,
+            issue_type: formData.issueType as any,
             description: formData.description,
             status: "pending"
           }
         ]);
+      
+      console.log("Supabase response:", { data, error });
       
       if (error) throw error;
       
@@ -71,10 +80,10 @@ export function GuestForm() {
         description: ""
       });
     } catch (error: any) {
+      console.error("Error submitting request:", error);
       toast.error("Failed to submit request", {
         description: error.message || "Please try again later.",
       });
-      console.error("Error submitting request:", error);
     } finally {
       setIsLoading(false);
     }
@@ -135,6 +144,7 @@ export function GuestForm() {
           <Select 
             value={formData.deviceType} 
             onValueChange={(value) => handleSelectChange("deviceType", value)}
+            required
           >
             <SelectTrigger>
               <SelectValue placeholder="Select device type" />
@@ -153,6 +163,7 @@ export function GuestForm() {
           <Select 
             value={formData.issueType} 
             onValueChange={(value) => handleSelectChange("issueType", value)}
+            required
           >
             <SelectTrigger>
               <SelectValue placeholder="Select issue type" />
