@@ -9,7 +9,77 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      request_comments: {
+        Row: {
+          comment_text: string
+          created_at: string
+          id: string
+          request_id: string
+          user_name: string
+        }
+        Insert: {
+          comment_text: string
+          created_at?: string
+          id?: string
+          request_id: string
+          user_name: string
+        }
+        Update: {
+          comment_text?: string
+          created_at?: string
+          id?: string
+          request_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_comments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "wifi_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wifi_requests: {
+        Row: {
+          created_at: string
+          description: string | null
+          device_type: Database["public"]["Enums"]["device_type"]
+          email: string
+          id: string
+          issue_type: Database["public"]["Enums"]["issue_type"]
+          name: string
+          room_number: string
+          status: Database["public"]["Enums"]["request_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          device_type: Database["public"]["Enums"]["device_type"]
+          email: string
+          id?: string
+          issue_type: Database["public"]["Enums"]["issue_type"]
+          name: string
+          room_number: string
+          status?: Database["public"]["Enums"]["request_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          device_type?: Database["public"]["Enums"]["device_type"]
+          email?: string
+          id?: string
+          issue_type?: Database["public"]["Enums"]["issue_type"]
+          name?: string
+          room_number?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +88,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      device_type: "smartphone" | "laptop" | "tablet" | "other"
+      issue_type: "connect" | "slow" | "disconnect" | "login" | "other"
+      request_status: "pending" | "in-progress" | "completed" | "escalated"
     }
     CompositeTypes: {
       [_ in never]: never

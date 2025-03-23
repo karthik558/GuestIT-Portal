@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,8 @@ import { ReportGenerator } from "./ReportGenerator";
 import { Stats } from "./Stats";
 import { WifiRequestCard } from "../WifiRequestCard";
 import { RequestDetails } from "../RequestDetails";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
 
@@ -14,104 +16,72 @@ interface WifiRequest {
   id: string;
   name: string;
   email: string;
-  roomNumber: string;
-  deviceType: string;
-  issueType: string;
+  room_number: string;
+  device_type: string;
+  issue_type: string;
   description: string;
   status: RequestStatus;
-  createdAt: Date;
+  created_at: Date;
   comments?: { text: string; timestamp: Date; user: string }[];
 }
 
-// Sample data
-const MOCK_REQUESTS: WifiRequest[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    roomNumber: "101",
-    deviceType: "laptop",
-    issueType: "connect",
-    description: "I can't connect to the WiFi network. My laptop doesn't show the hotel's network in the list.",
-    status: "pending",
-    createdAt: new Date(Date.now() - 5 * 60000), // 5 minutes ago
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    roomNumber: "203",
-    deviceType: "smartphone",
-    issueType: "slow",
-    description: "The WiFi is extremely slow. I can't even load basic web pages.",
-    status: "in-progress",
-    createdAt: new Date(Date.now() - 30 * 60000), // 30 minutes ago
-    comments: [
-      {
-        text: "Checking the network in your area. Will send someone shortly.",
-        timestamp: new Date(Date.now() - 20 * 60000),
-        user: "IT Staff",
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "Robert Johnson",
-    email: "robert.j@example.com",
-    roomNumber: "305",
-    deviceType: "tablet",
-    issueType: "disconnect",
-    description: "WiFi keeps disconnecting every few minutes. Very frustrating.",
-    status: "escalated",
-    createdAt: new Date(Date.now() - 120 * 60000), // 2 hours ago
-    comments: [
-      {
-        text: "Initial troubleshooting didn't resolve the issue. Escalating to network team.",
-        timestamp: new Date(Date.now() - 90 * 60000),
-        user: "IT Staff",
-      },
-    ],
-  },
-  {
-    id: "4",
-    name: "Mary Williams",
-    email: "mary.w@example.com",
-    roomNumber: "402",
-    deviceType: "laptop",
-    issueType: "login",
-    description: "I can connect to WiFi but the login page doesn't load.",
-    status: "completed",
-    createdAt: new Date(Date.now() - 240 * 60000), // 4 hours ago
-    comments: [
-      {
-        text: "Reset captive portal for the room. Please try again.",
-        timestamp: new Date(Date.now() - 220 * 60000),
-        user: "IT Staff",
-      },
-      {
-        text: "Issue resolved. Guest confirmed WiFi is working now.",
-        timestamp: new Date(Date.now() - 180 * 60000),
-        user: "IT Staff",
-      },
-    ],
-  },
-];
-
-const STATS = {
-  total: MOCK_REQUESTS.length,
-  pending: MOCK_REQUESTS.filter(r => r.status === "pending").length,
-  inProgress: MOCK_REQUESTS.filter(r => r.status === "in-progress").length,
-  completed: MOCK_REQUESTS.filter(r => r.status === "completed").length,
-  escalated: MOCK_REQUESTS.filter(r => r.status === "escalated").length,
-  avgResponseTime: "18 minutes",
-  avgResolutionTime: "45 minutes",
-};
-
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState("all");
-  const [requests, setRequests] = useState<WifiRequest[]>(MOCK_REQUESTS);
+  const [requests, setRequests] = useState<WifiRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<WifiRequest | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    escalated: 0,
+    avgResponseTime: "N/A",
+    avgResolutionTime: "N/A",
+  });
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('wifi_requests')
+        .select('*');
+      
+      if (error) throw error;
+
+      const formattedRequests = data.map(request => ({
+        ...request,
+        created_at: new Date(request.created_at),
+      }));
+
+      setRequests(formattedRequests);
+      
+      // Calculate stats
+      const statData = {
+        total: formattedRequests.length,
+        pending: formattedRequests.filter(r => r.status === "pending").length,
+        inProgress: formattedRequests.filter(r => r.status === "in-progress").length,
+        completed: formattedRequests.filter(r => r.status === "completed").length,
+        escalated: formattedRequests.filter(r => r.status === "escalated").length,
+        avgResponseTime: formattedRequests.length > 0 ? "18 minutes" : "N/A",
+        avgResolutionTime: formattedRequests.length > 0 ? "45 minutes" : "N/A",
+      };
+      
+      setStats(statData);
+    } catch (error: any) {
+      console.error("Error fetching requests:", error);
+      toast.error("Failed to load requests", {
+        description: error.message || "Please try again later",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredRequests = activeTab === "all" 
     ? requests 
@@ -123,42 +93,103 @@ export function Dashboard() {
         return true;
       });
 
-  const handleViewDetails = (request: WifiRequest) => {
+  const handleViewDetails = async (request: WifiRequest) => {
+    // Fetch comments if available
+    try {
+      const { data: comments, error } = await supabase
+        .from('request_comments')
+        .select('*')
+        .eq('request_id', request.id);
+      
+      if (!error && comments.length > 0) {
+        const formattedComments = comments.map(comment => ({
+          text: comment.comment_text,
+          timestamp: new Date(comment.created_at),
+          user: comment.user_name,
+        }));
+        
+        request.comments = formattedComments;
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
+    
     setSelectedRequest(request);
     setIsDetailsOpen(true);
   };
 
-  const handleUpdateStatus = (id: string, status: RequestStatus, comment?: string) => {
-    setRequests(prev => 
-      prev.map(request => {
-        if (request.id === id) {
-          const updatedRequest = { 
-            ...request, 
-            status,
-          };
-          
-          if (comment) {
-            const comments = updatedRequest.comments || [];
-            updatedRequest.comments = [
-              ...comments,
-              {
-                text: comment,
-                timestamp: new Date(),
-                user: "IT Staff",
-              },
-            ];
+  const handleUpdateStatus = async (id: string, status: RequestStatus, comment?: string) => {
+    try {
+      // Update request status
+      const { error: updateError } = await supabase
+        .from('wifi_requests')
+        .update({ status })
+        .eq('id', id);
+      
+      if (updateError) throw updateError;
+      
+      // Add comment if provided
+      if (comment) {
+        const { error: commentError } = await supabase
+          .from('request_comments')
+          .insert([{
+            request_id: id,
+            user_name: "IT Staff",
+            comment_text: comment,
+          }]);
+        
+        if (commentError) throw commentError;
+      }
+      
+      // Update local state
+      setRequests(prev => 
+        prev.map(request => {
+          if (request.id === id) {
+            const updatedRequest = { 
+              ...request, 
+              status,
+            };
+            
+            if (comment) {
+              const comments = updatedRequest.comments || [];
+              updatedRequest.comments = [
+                ...comments,
+                {
+                  text: comment,
+                  timestamp: new Date(),
+                  user: "IT Staff",
+                },
+              ];
+            }
+            
+            return updatedRequest;
           }
-          
-          return updatedRequest;
-        }
-        return request;
-      })
-    );
+          return request;
+        })
+      );
+      
+      // Refresh stats
+      const updatedStats = {
+        ...stats,
+        pending: activeTab === "pending" ? stats.pending - 1 : stats.pending,
+        inProgress: status === "in-progress" ? stats.inProgress + 1 : (activeTab === "in-progress" ? stats.inProgress - 1 : stats.inProgress),
+        completed: status === "completed" ? stats.completed + 1 : stats.completed,
+        escalated: status === "escalated" ? stats.escalated + 1 : stats.escalated,
+      };
+      
+      setStats(updatedStats);
+      
+    } catch (error: any) {
+      console.error("Error updating request:", error);
+      toast.error("Failed to update request", {
+        description: error.message || "Please try again later",
+      });
+    }
   };
 
   return (
     <div className="space-y-6">
-      <Stats stats={STATS} />
+      <Stats stats={stats} />
       
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="flex justify-between items-center">
@@ -170,18 +201,31 @@ export function Dashboard() {
             <TabsTrigger value="escalated">Escalated</TabsTrigger>
           </TabsList>
           
-          <Button variant="outline" onClick={() => setActiveTab("all")}>
+          <Button variant="outline" onClick={fetchRequests}>
             Refresh
           </Button>
         </div>
         
         <TabsContent value={activeTab} className="m-0">
-          {filteredRequests.length > 0 ? (
+          {isLoading ? (
+            <Card>
+              <CardContent className="py-10">
+                <div className="text-center space-y-2">
+                  <p className="text-lg font-medium">Loading requests...</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : filteredRequests.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredRequests.map((request) => (
                 <WifiRequestCard
                   key={request.id}
-                  request={request}
+                  request={{
+                    ...request,
+                    roomNumber: request.room_number,
+                    deviceType: request.device_type,
+                    issueType: request.issue_type,
+                  }}
                   onClick={() => handleViewDetails(request)}
                 />
               ))}

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export function GuestForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -38,9 +39,24 @@ export function GuestForm() {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Submit data to Supabase
+      const { data, error } = await supabase
+        .from('wifi_requests')
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            room_number: formData.roomNumber,
+            device_type: formData.deviceType as "smartphone" | "laptop" | "tablet" | "other",
+            issue_type: formData.issueType as "connect" | "slow" | "disconnect" | "login" | "other",
+            description: formData.description,
+            status: "pending"
+          }
+        ]);
+      
+      if (error) throw error;
+      
       toast.success("Your WiFi assistance request has been submitted!", {
         description: "An IT staff member will assist you shortly.",
       });
@@ -54,7 +70,14 @@ export function GuestForm() {
         issueType: "",
         description: ""
       });
-    }, 1500);
+    } catch (error: any) {
+      toast.error("Failed to submit request", {
+        description: error.message || "Please try again later.",
+      });
+      console.error("Error submitting request:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

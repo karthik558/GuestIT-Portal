@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
 
@@ -21,12 +22,15 @@ interface WifiRequest {
   id: string;
   name: string;
   email: string;
-  roomNumber: string;
-  deviceType: string;
-  issueType: string;
+  room_number?: string;
+  roomNumber?: string;
+  device_type?: string;
+  deviceType?: string;
+  issue_type?: string;
+  issueType?: string;
   description: string;
   status: RequestStatus;
-  createdAt: Date;
+  created_at: Date;
   comments?: { text: string; timestamp: Date; user: string }[];
 }
 
@@ -50,8 +54,13 @@ export function RequestDetails({
 
   if (!request) return null;
   
-  const timeAgo = formatDistanceToNow(new Date(request.createdAt), { addSuffix: true });
-  const formattedDate = format(new Date(request.createdAt), "PPpp");
+  // Handle both property naming conventions (Supabase uses snake_case, frontend uses camelCase)
+  const roomNumber = request.room_number || request.roomNumber || "";
+  const deviceType = request.device_type || request.deviceType || "";
+  const issueType = request.issue_type || request.issueType || "";
+  
+  const timeAgo = formatDistanceToNow(new Date(request.created_at), { addSuffix: true });
+  const formattedDate = format(new Date(request.created_at), "PPpp");
 
   const getStatusColor = (status: RequestStatus) => {
     switch (status) {
@@ -83,13 +92,12 @@ export function RequestDetails({
     }
   };
 
-  const handleUpdateStatus = (status: RequestStatus) => {
+  const handleUpdateStatus = async (status: RequestStatus) => {
     setIsUpdating(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
+    try {
       if (onUpdateStatus) {
-        onUpdateStatus(request.id, status, comment);
+        await onUpdateStatus(request.id, status, comment);
       }
       
       toast.success(`Request status updated to ${getStatusText(status)}`, {
@@ -97,9 +105,15 @@ export function RequestDetails({
       });
       
       setComment("");
-      setIsUpdating(false);
       onClose();
-    }, 1000);
+    } catch (error: any) {
+      toast.error("Failed to update status", {
+        description: error.message || "Please try again",
+      });
+      console.error("Error updating status:", error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -129,7 +143,7 @@ export function RequestDetails({
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Room</p>
-              <p>{request.roomNumber}</p>
+              <p>{roomNumber}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Date</p>
@@ -137,11 +151,11 @@ export function RequestDetails({
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Device Type</p>
-              <p className="capitalize">{request.deviceType}</p>
+              <p className="capitalize">{deviceType}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Issue Type</p>
-              <p className="capitalize">{request.issueType}</p>
+              <p className="capitalize">{issueType}</p>
             </div>
           </div>
           

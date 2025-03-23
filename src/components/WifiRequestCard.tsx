@@ -9,11 +9,14 @@ type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
 interface WifiRequest {
   id: string;
   name: string;
-  roomNumber: string;
-  deviceType: string;
-  issueType: string;
+  room_number?: string;
+  roomNumber?: string;
+  device_type?: string;
+  deviceType?: string;
+  issue_type?: string;
+  issueType?: string;
   status: RequestStatus;
-  createdAt: Date;
+  created_at: Date;
 }
 
 interface WifiRequestCardProps {
@@ -22,6 +25,11 @@ interface WifiRequestCardProps {
 }
 
 export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
+  // Handle both property naming conventions (Supabase uses snake_case, frontend uses camelCase)
+  const roomNumber = request.room_number || request.roomNumber || "";
+  const deviceType = request.device_type || request.deviceType || "";
+  const issueType = request.issue_type || request.issueType || "";
+
   const getStatusColor = (status: RequestStatus) => {
     switch (status) {
       case "pending":
@@ -52,7 +60,7 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
     }
   };
 
-  const timeAgo = formatDistanceToNow(new Date(request.createdAt), { addSuffix: true });
+  const timeAgo = formatDistanceToNow(new Date(request.created_at), { addSuffix: true });
 
   return (
     <Card className="card-hover overflow-hidden animate-scale-in">
@@ -68,15 +76,15 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <p className="text-muted-foreground">Room:</p>
-            <p className="font-medium">{request.roomNumber}</p>
+            <p className="font-medium">{roomNumber}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Device:</p>
-            <p className="font-medium capitalize">{request.deviceType}</p>
+            <p className="font-medium capitalize">{deviceType}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Issue:</p>
-            <p className="font-medium capitalize">{request.issueType}</p>
+            <p className="font-medium capitalize">{issueType}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Submitted:</p>
