@@ -32,7 +32,7 @@ import { UserRole, AssignmentProps } from "@/types/user";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { UserPlus, Pencil, Trash, RefreshCw } from "lucide-react";
+import { UserPlus, Pencil, RefreshCw } from "lucide-react";
 
 export function AdminUsers() {
   const [users, setUsers] = useState<AssignmentProps[]>([]);
@@ -54,18 +54,31 @@ export function AdminUsers() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
+      // First get all users from auth.users
       const { data: { users }, error } = await supabase.auth.admin.listUsers();
       
       if (error) throw error;
       
-      const formattedUsers = users.map(user => ({
-        id: user.id,
-        name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
-        email: user.email || 'No email',
-        role: (user.user_metadata?.role as UserRole) || 'user',
-        team: user.user_metadata?.team || '',
-        can_escalate: user.user_metadata?.can_escalate || false,
-      }));
+      // Then get profiles for all users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (profilesError) throw profilesError;
+      
+      // Combine user data with profile data
+      const formattedUsers = users.map(user => {
+        const profile = profiles.find(p => p.id === user.id);
+        
+        return {
+          id: user.id,
+          name: profile?.first_name || user.email?.split('@')[0] || 'Unknown',
+          email: user.email || 'No email',
+          role: (profile?.role as UserRole) || 'user',
+          team: profile?.team || '',
+          can_escalate: profile?.can_escalate || false,
+        };
+      });
       
       setUsers(formattedUsers);
     } catch (error: any) {
@@ -106,36 +119,41 @@ export function AdminUsers() {
     try {
       if (editingUser) {
         // Update existing user
-        const { error } = await supabase.auth.admin.updateUserById(
-          editingUser.id,
-          { 
-            user_metadata: { 
-              role: formData.role,
-              name: formData.name,
-              team: formData.team,
-              can_escalate: formData.can_escalate,
-            }
-          }
-        );
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            role: formData.role,
+            first_name: formData.name,
+            team: formData.team,
+            can_escalate: formData.can_escalate,
+          })
+          .eq('id', editingUser.id);
         
-        if (error) throw error;
+        if (profileError) throw profileError;
         
         toast.success("User updated successfully");
       } else {
         // Create new user
-        const { error } = await supabase.auth.admin.createUser({
+        const { data, error } = await supabase.auth.admin.createUser({
           email: formData.email,
           password: "tempPassword123", // Users should change this
           email_confirm: true,
-          user_metadata: { 
-            role: formData.role,
-            name: formData.name,
-            team: formData.team,
-            can_escalate: formData.can_escalate,
-          }
         });
         
         if (error) throw error;
+        
+        // Now update the profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            role: formData.role,
+            first_name: formData.name,
+            team: formData.team,
+            can_escalate: formData.can_escalate,
+          })
+          .eq('id', data.user.id);
+        
+        if (profileError) throw profileError;
         
         toast.success("User created successfully");
       }

@@ -25,10 +25,13 @@ export function Navbar({ isAdmin }: NavbarProps) {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = async () => {
+      setIsLoading(true);
+      
       const { data } = await supabase.auth.getSession();
       
       if (data.session) {
@@ -38,13 +41,25 @@ export function Navbar({ isAdmin }: NavbarProps) {
           setUserName(email.split('@')[0]);
         }
         
-        // Get user role from metadata or default to 'user'
-        const role = data.session.user.user_metadata?.role as UserRole || 'user';
-        setUserRole(role);
+        // Get user role from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.session.user.id)
+          .single();
+        
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+          setUserRole('user');
+        } else {
+          setUserRole(profileData.role as UserRole);
+        }
       } else {
         setIsAuthenticated(false);
         setUserRole(null);
       }
+      
+      setIsLoading(false);
     };
     
     checkAuth();
@@ -57,9 +72,19 @@ export function Navbar({ isAdmin }: NavbarProps) {
           setUserName(email.split('@')[0]);
         }
         
-        // Get user role from metadata or default to 'user'
-        const role = session.user.user_metadata?.role as UserRole || 'user';
-        setUserRole(role);
+        // Get user role from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+          setUserRole('user');
+        } else {
+          setUserRole(profileData.role as UserRole);
+        }
       } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
         setUserRole(null);
@@ -88,6 +113,29 @@ export function Navbar({ isAdmin }: NavbarProps) {
     : null;
     
   const isAdminUser = userRole === 'admin';
+
+  if (isLoading) {
+    // Return a minimal navbar while loading
+    return (
+      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full animate-slide-down">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center">
+              <Link to="/" className="flex items-center space-x-2">
+                <span className="h-8 w-8 rounded-full violet-gradient flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-lg">L</span>
+                </span>
+                <span className="text-xl font-display font-semibold tracking-tight">
+                  Lilac WiFi Support
+                </span>
+              </Link>
+            </div>
+            <ModeToggle />
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full animate-slide-down">

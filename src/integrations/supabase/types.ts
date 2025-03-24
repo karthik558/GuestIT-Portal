@@ -30,6 +30,39 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          can_escalate: boolean | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          team: string | null
+          updated_at: string
+        }
+        Insert: {
+          can_escalate?: boolean | null
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          team?: string | null
+          updated_at?: string
+        }
+        Update: {
+          can_escalate?: boolean | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          team?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       request_comments: {
         Row: {
           comment_text: string
@@ -112,6 +145,7 @@ export type Database = {
       device_type: "smartphone" | "laptop" | "tablet" | "other"
       issue_type: "connect" | "slow" | "disconnect" | "login" | "other"
       request_status: "pending" | "in-progress" | "completed" | "escalated"
+      user_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never

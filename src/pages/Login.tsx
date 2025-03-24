@@ -13,6 +13,7 @@ import { UserRole } from "@/types/user";
 export default function Login() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -20,15 +21,36 @@ export default function Login() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        // Check if user has admin role
-        const role = data.session.user.user_metadata?.role as UserRole || 'user';
-        if (role === 'admin') {
-          navigate("/admin");
-        } else {
-          navigate("/");
+      setIsCheckingAuth(true);
+      try {
+        const { data } = await supabase.auth.getSession();
+        
+        if (data.session) {
+          // Get the user's profile to check their role
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.session.user.id)
+            .single();
+          
+          if (profileError) {
+            console.error("Error fetching profile:", profileError);
+            // Still allow navigation but default to user role
+            navigate("/");
+            return;
+          }
+          
+          // Redirect based on role
+          if (profileData.role === 'admin') {
+            navigate("/admin");
+          } else {
+            navigate("/");
+          }
         }
+      } catch (error) {
+        console.error("Auth check error:", error);
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
     
@@ -60,17 +82,23 @@ export default function Login() {
         password: formData.password,
       });
       
-      console.log("Auth response:", { data, error });
-      
       if (error) throw error;
       
-      // Check if the user has admin role
-      let userRole: UserRole = 'user';
+      // Get user profile from profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
       
-      // Get user role from metadata
-      if (data.user?.user_metadata?.role === 'admin') {
-        userRole = 'admin';
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        toast.error("Failed to fetch user profile");
+        setIsLoading(false);
+        return;
       }
+      
+      const userRole = profileData.role as UserRole;
       
       toast.success(`Login successful. Welcome ${userRole === 'admin' ? 'Administrator' : 'User'}`);
       
@@ -89,6 +117,21 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            <p className="text-lg">Checking authentication...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
