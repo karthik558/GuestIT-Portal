@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      escalation_settings: {
+        Row: {
+          created_at: string
+          emails: Json | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          emails?: Json | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          emails?: Json | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       request_comments: {
         Row: {
           comment_text: string

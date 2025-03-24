@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { EscalationSettings as EscalationSettingsType } from "@/types/escalation";
 
 export function EscalationSettings() {
   const [emails, setEmails] = useState<string[]>([]);
@@ -39,7 +40,9 @@ export function EscalationSettings() {
       }
       
       if (data) {
-        setEmails(data.emails || []);
+        // Parse the emails from the JSONB field
+        const emailList = Array.isArray(data.emails) ? data.emails : [];
+        setEmails(emailList);
       } else {
         setEmails([]);
       }
@@ -88,7 +91,7 @@ export function EscalationSettings() {
         // Update existing record
         const { error } = await supabase
           .from('escalation_settings')
-          .update({ emails })
+          .update({ emails: emails })
           .eq('id', data.id);
           
         if (error) throw error;
@@ -96,7 +99,7 @@ export function EscalationSettings() {
         // Insert new record
         const { error } = await supabase
           .from('escalation_settings')
-          .insert([{ emails }]);
+          .insert([{ emails: emails }]);
           
         if (error) throw error;
       }

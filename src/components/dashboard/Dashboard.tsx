@@ -11,6 +11,7 @@ import { WifiRequestCard } from "../WifiRequestCard";
 import { RequestDetails } from "../RequestDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { EscalationSettings as EscalationSettingsType } from "@/types/escalation";
 
 type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
 
@@ -149,15 +150,16 @@ export function Dashboard() {
         // Get escalation emails
         const { data: settings, error: settingsError } = await supabase
           .from('escalation_settings')
-          .select('emails')
+          .select('*')
           .single();
         
-        if (!settingsError && settings?.emails?.length > 0) {
+        if (!settingsError && settings && settings.emails) {
+          const emailList = Array.isArray(settings.emails) ? settings.emails : [];
           const request = requests.find(r => r.id === id);
           
-          if (request) {
+          if (request && emailList.length > 0) {
             toast.success("Escalation emails will be sent", {
-              description: `Notification sent to ${settings.emails.length} recipients`,
+              description: `Notification sent to ${emailList.length} recipients`,
             });
           }
         }
