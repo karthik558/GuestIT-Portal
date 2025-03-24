@@ -40,8 +40,10 @@ export function EscalationSettings() {
       }
       
       if (data) {
-        // Parse the emails from the JSONB field
-        const emailList = Array.isArray(data.emails) ? data.emails : [];
+        // Parse the emails from the JSONB field and ensure they're all strings
+        const emailList = Array.isArray(data.emails) 
+          ? data.emails.map(email => String(email)) 
+          : [];
         setEmails(emailList);
       } else {
         setEmails([]);

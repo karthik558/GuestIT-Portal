@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,7 +64,6 @@ export function Dashboard() {
 
       setRequests(formattedRequests);
       
-      // Calculate stats
       const statData = {
         total: formattedRequests.length,
         pending: formattedRequests.filter(r => r.status === "pending").length,
@@ -88,7 +86,7 @@ export function Dashboard() {
   };
 
   const filteredRequests = activeTab === "all" 
-    ? requests.filter(r => r.status !== "completed") // Hide completed by default
+    ? requests.filter(r => r.status !== "completed")
     : requests.filter(request => {
         if (activeTab === "pending") return request.status === "pending";
         if (activeTab === "in-progress") return request.status === "in-progress";
@@ -98,7 +96,6 @@ export function Dashboard() {
       });
 
   const handleViewDetails = async (request: WifiRequest) => {
-    // Fetch comments if available
     try {
       const { data: comments, error } = await supabase
         .from('request_comments')
@@ -124,7 +121,6 @@ export function Dashboard() {
 
   const handleUpdateStatus = async (id: string, status: RequestStatus, comment?: string) => {
     try {
-      // Update request status
       const { error: updateError } = await supabase
         .from('wifi_requests')
         .update({ status })
@@ -132,7 +128,6 @@ export function Dashboard() {
       
       if (updateError) throw updateError;
       
-      // Add comment if provided
       if (comment) {
         const { error: commentError } = await supabase
           .from('request_comments')
@@ -145,27 +140,6 @@ export function Dashboard() {
         if (commentError) throw commentError;
       }
       
-      // If status is escalated, send notification emails
-      if (status === "escalated") {
-        // Get escalation emails
-        const { data: settings, error: settingsError } = await supabase
-          .from('escalation_settings')
-          .select('*')
-          .single();
-        
-        if (!settingsError && settings && settings.emails) {
-          const emailList = Array.isArray(settings.emails) ? settings.emails : [];
-          const request = requests.find(r => r.id === id);
-          
-          if (request && emailList.length > 0) {
-            toast.success("Escalation emails will be sent", {
-              description: `Notification sent to ${emailList.length} recipients`,
-            });
-          }
-        }
-      }
-      
-      // Update local state
       setRequests(prev => 
         prev.map(request => {
           if (request.id === id) {
@@ -192,7 +166,6 @@ export function Dashboard() {
         })
       );
       
-      // Refresh stats
       const updatedStats = {
         ...stats,
         pending: stats.pending - (activeTab === "pending" ? 1 : 0),
@@ -203,14 +176,61 @@ export function Dashboard() {
       
       setStats(updatedStats);
       
-      // Refresh the requests
       fetchRequests();
-      
     } catch (error: any) {
       console.error("Error updating request:", error);
       toast.error("Failed to update request", {
         description: error.message || "Please try again later",
       });
+    }
+  };
+
+  const handleEscalateRequest = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('wifi_requests')
+        .update({ status: 'escalated' })
+        .eq('id', id);
+      
+      if (error) {
+        toast.error("Failed to escalate request");
+        console.error("Error escalating request:", error);
+        return;
+      }
+      
+      setRequests(prev => 
+        prev.map(req => 
+          req.id === id ? { ...req, status: 'escalated' } : req
+        )
+      );
+      
+      try {
+        const { data: settings, error: settingsError } = await supabase
+          .from('escalation_settings')
+          .select('*')
+          .single();
+        
+        if (!settingsError && settings && settings.emails) {
+          const emailList = Array.isArray(settings.emails) 
+            ? settings.emails.map(email => String(email))
+            : [];
+            
+          const request = requests.find(r => r.id === id);
+          
+          if (request && emailList.length > 0) {
+            toast.success("Escalation emails will be sent", {
+              description: `Notification sent to ${emailList.length} recipients`,
+            });
+          }
+        }
+      } catch (notifyError) {
+        console.error("Error sending escalation notifications:", notifyError);
+      }
+      
+      toast.success("Request escalated successfully");
+    } catch (error) {
+      console.error("Error in escalation process:", error);
+      toast.error("An error occurred during escalation");
     }
   };
 
