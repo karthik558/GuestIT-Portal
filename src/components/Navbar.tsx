@@ -122,11 +122,13 @@ export function Navbar({ isAdmin }: NavbarProps) {
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2">
-                <span className="h-8 w-8 rounded-full violet-gradient flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">L</span>
-                </span>
+                <img 
+                  src="public/favicon.png" 
+                  alt="Lilac WiFi Logo" 
+                  className="h-8 w-8 rounded-full"
+                />
                 <span className="text-xl font-display font-semibold tracking-tight">
-                  Lilac WiFi Support
+                  WiFi Support
                 </span>
               </Link>
             </div>
@@ -147,7 +149,7 @@ export function Navbar({ isAdmin }: NavbarProps) {
                 <span className="text-primary-foreground font-bold text-lg">L</span>
               </span>
               <span className="text-xl font-display font-semibold tracking-tight">
-                Lilac WiFi Support
+                WiFi Support
               </span>
             </Link>
           </div>
