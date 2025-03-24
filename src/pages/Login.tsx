@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,13 @@ export default function Login() {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        navigate("/admin");
+        // Check if user has admin role
+        const role = data.session.user.user_metadata?.role as UserRole || 'user';
+        if (role === 'admin') {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
       }
     };
     
@@ -61,23 +66,9 @@ export default function Login() {
       // Check if the user has admin role
       let userRole: UserRole = 'user';
       
-      // Get user role from metadata or determine it (e.g., could be based on email domain)
+      // Get user role from metadata
       if (data.user?.user_metadata?.role === 'admin') {
         userRole = 'admin';
-      } else {
-        // Set role based on email for demonstration
-        // In a real app, you'd check against your database
-        const adminEmails = ['admin@lilac.com', 'admin@example.com'];
-        if (adminEmails.includes(data.user?.email || '')) {
-          // Update the user metadata to include role
-          const { error: updateError } = await supabase.auth.updateUser({
-            data: { role: 'admin' }
-          });
-          
-          if (!updateError) {
-            userRole = 'admin';
-          }
-        }
       }
       
       toast.success(`Login successful. Welcome ${userRole === 'admin' ? 'Administrator' : 'User'}`);

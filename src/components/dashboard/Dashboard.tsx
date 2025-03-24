@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportGenerator } from "./ReportGenerator";
+import { AdminUsers } from "./AdminUsers";
+import { EscalationSettings } from "./EscalationSettings";
 import { Stats } from "./Stats";
 import { WifiRequestCard } from "../WifiRequestCard";
 import { RequestDetails } from "../RequestDetails";
@@ -27,6 +29,7 @@ interface WifiRequest {
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState("all");
+  const [activeDashboardTab, setActiveDashboardTab] = useState("requests");
   const [requests, setRequests] = useState<WifiRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<WifiRequest | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -84,7 +87,7 @@ export function Dashboard() {
   };
 
   const filteredRequests = activeTab === "all" 
-    ? requests 
+    ? requests.filter(r => r.status !== "completed") // Hide completed by default
     : requests.filter(request => {
         if (activeTab === "pending") return request.status === "pending";
         if (activeTab === "in-progress") return request.status === "in-progress";
@@ -141,6 +144,25 @@ export function Dashboard() {
         if (commentError) throw commentError;
       }
       
+      // If status is escalated, send notification emails
+      if (status === "escalated") {
+        // Get escalation emails
+        const { data: settings, error: settingsError } = await supabase
+          .from('escalation_settings')
+          .select('emails')
+          .single();
+        
+        if (!settingsError && settings?.emails?.length > 0) {
+          const request = requests.find(r => r.id === id);
+          
+          if (request) {
+            toast.success("Escalation emails will be sent", {
+              description: `Notification sent to ${settings.emails.length} recipients`,
+            });
+          }
+        }
+      }
+      
       // Update local state
       setRequests(prev => 
         prev.map(request => {
@@ -171,13 +193,16 @@ export function Dashboard() {
       // Refresh stats
       const updatedStats = {
         ...stats,
-        pending: activeTab === "pending" ? stats.pending - 1 : stats.pending,
+        pending: stats.pending - (activeTab === "pending" ? 1 : 0),
         inProgress: status === "in-progress" ? stats.inProgress + 1 : (activeTab === "in-progress" ? stats.inProgress - 1 : stats.inProgress),
         completed: status === "completed" ? stats.completed + 1 : stats.completed,
         escalated: status === "escalated" ? stats.escalated + 1 : stats.escalated,
       };
       
       setStats(updatedStats);
+      
+      // Refresh the requests
+      fetchRequests();
       
     } catch (error: any) {
       console.error("Error updating request:", error);
@@ -191,71 +216,92 @@ export function Dashboard() {
     <div className="space-y-6">
       <Stats stats={stats} />
       
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <div className="flex justify-between items-center">
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="in-progress">In Progress</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="escalated">Escalated</TabsTrigger>
-          </TabsList>
-          
-          <Button variant="outline" onClick={fetchRequests}>
-            Refresh
-          </Button>
-        </div>
+      <Tabs defaultValue="requests" value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="space-y-4">
+        <TabsList className="w-full">
+          <TabsTrigger value="requests" className="flex-1">WiFi Requests</TabsTrigger>
+          <TabsTrigger value="users" className="flex-1">User Management</TabsTrigger>
+          <TabsTrigger value="reports" className="flex-1">Reports</TabsTrigger>
+          <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
+        </TabsList>
         
-        <TabsContent value={activeTab} className="m-0">
-          {isLoading ? (
-            <Card>
-              <CardContent className="py-10">
-                <div className="text-center space-y-2">
-                  <p className="text-lg font-medium">Loading requests...</p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : filteredRequests.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredRequests.map((request) => (
-                <WifiRequestCard
-                  key={request.id}
-                  request={{
-                    ...request,
-                    roomNumber: request.room_number,
-                    deviceType: request.device_type,
-                    issueType: request.issue_type,
-                  }}
-                  onClick={() => handleViewDetails(request)}
-                />
-              ))}
+        <TabsContent value="requests" className="m-0 space-y-4">
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <div className="flex justify-between items-center">
+              <TabsList>
+                <TabsTrigger value="all">Active</TabsTrigger>
+                <TabsTrigger value="pending">Pending</TabsTrigger>
+                <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+                <TabsTrigger value="escalated">Escalated</TabsTrigger>
+              </TabsList>
+              
+              <Button variant="outline" onClick={fetchRequests}>
+                Refresh
+              </Button>
             </div>
-          ) : (
-            <Card>
-              <CardContent className="py-10">
-                <div className="text-center space-y-2">
-                  <p className="text-lg font-medium">No requests found</p>
-                  <p className="text-muted-foreground">
-                    There are no WiFi assistance requests with this status.
-                  </p>
+            
+            <TabsContent value={activeTab} className="m-0">
+              {isLoading ? (
+                <Card>
+                  <CardContent className="py-10">
+                    <div className="text-center space-y-2">
+                      <p className="text-lg font-medium">Loading requests...</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : filteredRequests.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredRequests.map((request) => (
+                    <WifiRequestCard
+                      key={request.id}
+                      request={{
+                        ...request,
+                        roomNumber: request.room_number,
+                        deviceType: request.device_type,
+                        issueType: request.issue_type,
+                      }}
+                      onClick={() => handleViewDetails(request)}
+                    />
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                <Card>
+                  <CardContent className="py-10">
+                    <div className="text-center space-y-2">
+                      <p className="text-lg font-medium">No requests found</p>
+                      <p className="text-muted-foreground">
+                        There are no WiFi assistance requests with this status.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+        
+        <TabsContent value="users" className="m-0 space-y-4">
+          <AdminUsers />
+        </TabsContent>
+        
+        <TabsContent value="reports" className="m-0 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Generate Reports</CardTitle>
+              <CardDescription>
+                Create detailed reports based on WiFi assistance requests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ReportGenerator />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="settings" className="m-0 space-y-4">
+          <EscalationSettings />
         </TabsContent>
       </Tabs>
-      
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Generate Reports</CardTitle>
-          <CardDescription>
-            Create detailed reports based on WiFi assistance requests
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ReportGenerator />
-        </CardContent>
-      </Card>
       
       <RequestDetails
         request={selectedRequest}

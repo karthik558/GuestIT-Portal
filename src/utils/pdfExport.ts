@@ -1,5 +1,7 @@
 
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
 
@@ -17,10 +19,6 @@ interface WifiRequest {
 
 export const generatePDF = async (requests: WifiRequest[], reportType: string, dateRange: { from?: Date, to?: Date }) => {
   try {
-    // Dynamic import of jspdf and jspdf-autotable
-    const { default: jsPDF } = await import('jspdf');
-    const { default: autoTable } = await import('jspdf-autotable');
-    
     const doc = new jsPDF();
     
     // Add report title
@@ -75,8 +73,11 @@ export const generatePDF = async (requests: WifiRequest[], reportType: string, d
     
     // Create detailed table 
     if (reportType === 'detailed' || reportType === 'summary') {
+      const lastTable = (doc as any).lastAutoTable;
+      const finalY = lastTable ? lastTable.finalY : 55;
+      
       autoTable(doc, {
-        startY: doc.lastAutoTable.finalY + 15,
+        startY: finalY + 15,
         head: [['Name', 'Room', 'Issue Type', 'Status', 'Date']],
         body: filteredRequests.map(req => [
           req.name,

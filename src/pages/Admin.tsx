@@ -7,11 +7,13 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserRole } from "@/types/user";
+import { UserProfile } from "@/types/user";
 
 export default function Admin() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -33,6 +35,17 @@ export default function Admin() {
       // Check user role from metadata
       const role = data.session.user.user_metadata?.role as UserRole || 'user';
       setUserRole(role);
+      
+      // Create user profile object
+      const profile: UserProfile = {
+        id: data.session.user.id,
+        email: data.session.user.email || '',
+        role: role,
+        created_at: data.session.user.created_at,
+        last_sign_in_at: data.session.user.last_sign_in_at,
+      };
+      
+      setUserProfile(profile);
       
       if (role !== 'admin') {
         toast.error("You don't have permission to access the admin dashboard");

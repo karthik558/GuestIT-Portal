@@ -59,6 +59,12 @@ export function ReportGenerator() {
       
       if (error) throw error;
       
+      if (!data || data.length === 0) {
+        toast.warning("No data available to generate report");
+        setIsGenerating(false);
+        return;
+      }
+      
       // Format the data
       const formattedRequests = data.map(request => ({
         ...request,
@@ -72,6 +78,8 @@ export function ReportGenerator() {
         toast.success("Report generated successfully", {
           description: `The report "${fileName}" has been downloaded to your device.`,
         });
+      } else {
+        throw new Error("Failed to generate PDF file");
       }
     } catch (error: any) {
       console.error("Error generating report:", error);
