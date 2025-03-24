@@ -27,29 +27,38 @@ export default function Login() {
         
         if (data.session) {
           // Get the user's profile to check their role
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.session.user.id)
-            .single();
-          
-          if (profileError) {
-            console.error("Error fetching profile:", profileError);
-            // Still allow navigation but default to user role
-            navigate("/");
-            return;
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', data.session.user.id)
+              .single();
+            
+            if (profileError) {
+              console.error("Error fetching profile:", profileError);
+              // Log out the user if there's an error fetching the profile
+              await supabase.auth.signOut();
+              toast.error("Error fetching profile");
+              setIsCheckingAuth(false);
+              return;
+            }
+            
+            // Redirect based on role
+            if (profileData.role === 'admin') {
+              navigate("/admin");
+            } else {
+              navigate("/");
+            }
+          } catch (err) {
+            console.error("Profile fetch error:", err);
+            toast.error("Failed to fetch user profile");
+            setIsCheckingAuth(false);
           }
-          
-          // Redirect based on role
-          if (profileData.role === 'admin') {
-            navigate("/admin");
-          } else {
-            navigate("/");
-          }
+        } else {
+          setIsCheckingAuth(false);
         }
       } catch (error) {
         console.error("Auth check error:", error);
-      } finally {
         setIsCheckingAuth(false);
       }
     };
@@ -85,27 +94,32 @@ export default function Login() {
       if (error) throw error;
       
       // Get user profile from profiles table
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-      
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+          toast.error("Failed to fetch user profile");
+          setIsLoading(false);
+          return;
+        }
+        
+        const userRole = profileData.role as UserRole;
+        
+        toast.success(`Login successful. Welcome ${userRole === 'admin' ? 'Administrator' : 'User'}`);
+        
+        if (userRole === 'admin') {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+      } catch (err) {
+        console.error("Profile fetch error:", err);
         toast.error("Failed to fetch user profile");
-        setIsLoading(false);
-        return;
-      }
-      
-      const userRole = profileData.role as UserRole;
-      
-      toast.success(`Login successful. Welcome ${userRole === 'admin' ? 'Administrator' : 'User'}`);
-      
-      if (userRole === 'admin') {
-        navigate("/admin");
-      } else {
-        navigate("/");
       }
       
     } catch (error: any) {

@@ -34,44 +34,50 @@ export default function Admin() {
         }
         
         // Check user role from profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.session.user.id)
-          .single();
-        
-        if (profileError) {
-          console.error("Profile error:", profileError);
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.session.user.id)
+            .single();
+          
+          if (profileError) {
+            console.error("Profile error:", profileError);
+            toast.error("Failed to fetch user profile");
+            navigate("/login");
+            return;
+          }
+          
+          const role = profileData.role as UserRole;
+          setUserRole(role);
+          
+          // Create user profile object
+          const profile: UserProfile = {
+            id: data.session.user.id,
+            email: data.session.user.email || '',
+            role: role,
+            created_at: data.session.user.created_at,
+            last_sign_in_at: data.session.user.last_sign_in_at,
+            first_name: profileData.first_name || '',
+            last_name: profileData.last_name || '',
+            team: profileData.team || '',
+            can_escalate: profileData.can_escalate || false
+          };
+          
+          setUserProfile(profile);
+          
+          if (role !== 'admin') {
+            toast.error("You don't have permission to access the admin dashboard");
+            navigate("/");
+            return;
+          }
+          
+          setIsLoading(false);
+        } catch (profileErr) {
+          console.error("Profile fetch error:", profileErr);
           toast.error("Failed to fetch user profile");
           navigate("/login");
-          return;
         }
-        
-        const role = profileData.role as UserRole;
-        setUserRole(role);
-        
-        // Create user profile object
-        const profile: UserProfile = {
-          id: data.session.user.id,
-          email: data.session.user.email || '',
-          role: role,
-          created_at: data.session.user.created_at,
-          last_sign_in_at: data.session.user.last_sign_in_at,
-          first_name: profileData.first_name || '',
-          last_name: profileData.last_name || '',
-          team: profileData.team || '',
-          can_escalate: profileData.can_escalate || false
-        };
-        
-        setUserProfile(profile);
-        
-        if (role !== 'admin') {
-          toast.error("You don't have permission to access the admin dashboard");
-          navigate("/");
-          return;
-        }
-        
-        setIsLoading(false);
       } catch (error) {
         console.error("Auth check error:", error);
         toast.error("An unexpected error occurred");
