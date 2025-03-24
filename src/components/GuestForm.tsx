@@ -153,7 +153,6 @@ export function GuestForm() {
               <SelectItem value="smartphone">Smartphone</SelectItem>
               <SelectItem value="laptop">Laptop</SelectItem>
               <SelectItem value="tablet">Tablet</SelectItem>
-              <SelectItem value="smart_tv">Smart TV</SelectItem>
               <SelectItem value="other">Other</SelectItem>
             </SelectContent>
           </Select>
@@ -174,8 +173,6 @@ export function GuestForm() {
               <SelectItem value="slow">Slow Connection</SelectItem>
               <SelectItem value="disconnect">Keeps Disconnecting</SelectItem>
               <SelectItem value="login">Login Problems</SelectItem>
-              <SelectItem value="signal">Weak Signal</SelectItem>
-              <SelectItem value="speed">Streaming Issues</SelectItem>
               <SelectItem value="other">Other</SelectItem>
             </SelectContent>
           </Select>
