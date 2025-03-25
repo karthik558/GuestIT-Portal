@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { Resend } from "https://esm.sh/resend@2.0.0"
 
 // CORS headers for API responses
 const corsHeaders = {
@@ -14,6 +15,10 @@ const supabaseClient = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
 )
 
+// Initialize Resend with API key
+const resendApiKey = Deno.env.get("RESEND_API_KEY") || ""
+const resend = new Resend(resendApiKey)
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -22,6 +27,11 @@ serve(async (req) => {
 
   try {
     console.log("Starting escalation check...")
+    
+    // Check if Resend API key is configured
+    if (!resendApiKey) {
+      console.error("Resend API key not configured. Emails will not be sent.")
+    }
     
     // Get escalation settings
     const { data: escalationSettings, error: settingsError } = await supabaseClient
@@ -112,12 +122,8 @@ serve(async (req) => {
         console.error(`Error adding comment for request ${request.id}:`, commentError)
       }
       
-      // 3. Send email notification
+      // 3. Send email notification using Resend
       try {
-        // Currently using a mock email service
-        // In a production environment, you would integrate with a proper email service like Resend.com
-        
-        // Log the email that would be sent
         const emailSubject = `WiFi Request Escalated - ${request.id}`;
         const emailBody = `
 Request from ${request.name} (${request.email}) has been escalated.
@@ -131,25 +137,27 @@ This request was automatically escalated because it was ${wasStatus} without res
 Please address this request as soon as possible.
 `;
         
-        console.log(`Would send escalation email to: ${emails.join(', ')}`);
-        console.log(`Email subject: ${emailSubject}`);
-        console.log(`Email body: ${emailBody}`);
-        
-        // To implement actual email sending, you would use a service like Resend
-        // This would require adding the RESEND_API_KEY to your Supabase secrets
-        /*
-        Example implementation with Resend:
-        
-        const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-        await resend.emails.send({
-          from: "WiFi Support <support@yourdomain.com>",
-          to: emails,
-          subject: emailSubject,
-          text: emailBody,
-        });
-        */
+        if (resendApiKey && emails.length > 0) {
+          const { data: emailData, error: emailError } = await resend.emails.send({
+            from: "WiFi Support <onboarding@resend.dev>",
+            to: emails,
+            subject: emailSubject,
+            text: emailBody,
+          });
+          
+          if (emailError) {
+            console.error(`Error sending email for request ${request.id}:`, emailError);
+          } else {
+            console.log(`Email sent successfully for request ${request.id}:`, emailData);
+          }
+        } else {
+          // Log the email that would have been sent
+          console.log(`Would send escalation email to: ${emails.join(', ')}`);
+          console.log(`Email subject: ${emailSubject}`);
+          console.log(`Email body: ${emailBody}`);
+        }
       } catch (emailError) {
-        console.error(`Error sending email for request ${request.id}:`, emailError)
+        console.error(`Error sending email for request ${request.id}:`, emailError);
       }
     }
     
@@ -159,10 +167,10 @@ Please address this request as soon as possible.
         message: `Escalated ${requestsToEscalate.length} requests` 
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+    );
     
   } catch (error) {
-    console.error("Error in escalation function:", error)
+    console.error("Error in escalation function:", error);
     
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
@@ -170,6 +178,6 @@ Please address this request as soon as possible.
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
-    )
+    );
   }
-})
+});

@@ -24,7 +24,7 @@ export const submitWifiRequest = async (formData: WifiRequestFormData) => {
   };
   
   try {
-    // Generate custom tracking ID in the format first4letters + room_number
+    // Generate tracking ID in the format first4letters + room_number
     let trackingId = generateTrackingId(formData.name, formData.room_number);
     
     // Check if this tracking ID already exists to avoid duplicates
