@@ -15,22 +15,28 @@ export function ModeToggle() {
   >("theme-light");
 
   React.useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains("dark");
-    setThemeState(isDarkMode ? "theme-dark" : "theme-light");
+    // Get theme from localStorage or default to system
+    const savedTheme = localStorage.getItem("theme") as "theme-light" | "theme-dark" | "system" | null;
+    const initialTheme = savedTheme || "system";
+    setThemeState(initialTheme);
+    
+    // Apply the theme immediately on page load
+    applyTheme(initialTheme);
   }, []);
 
-  React.useEffect(() => {
+  const applyTheme = (theme: "theme-light" | "theme-dark" | "system") => {
     const isDark =
       theme === "theme-dark" ||
       (theme === "system" &&
         window.matchMedia("(prefers-color-scheme: dark)").matches);
 
     document.documentElement.classList.toggle("dark", isDark);
-  }, [theme]);
+  };
 
   function setTheme(theme: "theme-light" | "theme-dark" | "system") {
     setThemeState(theme);
     localStorage.setItem("theme", theme);
+    applyTheme(theme);
   }
 
   return (

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +12,7 @@ import { RequestDetails } from "../RequestDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { EscalationSettings as EscalationSettingsType } from "@/types/escalation";
+import { useNotifications } from "@/hooks/use-notifications";
 
 type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
 
@@ -43,10 +45,43 @@ export function Dashboard() {
     avgResponseTime: "N/A",
     avgResolutionTime: "N/A",
   });
+  
+  const { permission, requestPermission, showNotification } = useNotifications();
 
   useEffect(() => {
     fetchRequests();
-  }, []);
+    
+    // Request notification permission when component mounts
+    if (permission !== "granted") {
+      requestPermission();
+    }
+    
+    // Setup subscription for real-time updates
+    const channel = supabase
+      .channel('public:wifi_requests')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'wifi_requests' 
+      }, (payload) => {
+        console.log('New request received:', payload);
+        // Play notification sound and show system notification
+        if (payload.new) {
+          const newRequest = payload.new as any;
+          showNotification({
+            title: 'New WiFi Request',
+            body: `${newRequest.name} from room ${newRequest.room_number} needs assistance`,
+          });
+          // Refresh the requests list
+          fetchRequests();
+        }
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [permission]);
 
   const fetchRequests = async () => {
     setIsLoading(true);
@@ -239,17 +274,17 @@ export function Dashboard() {
       <Stats stats={stats} />
       
       <Tabs defaultValue="requests" value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="space-y-4">
-        <TabsList className="w-full">
-          <TabsTrigger value="requests" className="flex-1">WiFi Requests</TabsTrigger>
-          <TabsTrigger value="users" className="flex-1">User Management</TabsTrigger>
-          <TabsTrigger value="reports" className="flex-1">Reports</TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-2 md:grid-cols-4">
+          <TabsTrigger value="requests">WiFi Requests</TabsTrigger>
+          <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         
         <TabsContent value="requests" className="m-0 space-y-4">
           <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <div className="flex justify-between items-center">
-              <TabsList>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <TabsList className="grid grid-cols-3 md:grid-cols-5">
                 <TabsTrigger value="all">Active</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
                 <TabsTrigger value="in-progress">In Progress</TabsTrigger>

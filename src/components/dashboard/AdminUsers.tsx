@@ -54,29 +54,24 @@ export function AdminUsers() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      // First get all users from auth.users
-      const { data: { users }, error } = await supabase.auth.admin.listUsers();
-      
-      if (error) throw error;
-      
-      // Then get profiles for all users
+      // First get auth users via the profiles table
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
       
       if (profilesError) throw profilesError;
       
-      // Combine user data with profile data
-      const formattedUsers = users.map(user => {
-        const profile = profiles.find(p => p.id === user.id);
-        
+      // Get user emails from auth.users
+      // Note: We're not using admin.listUsers since it requires additional permissions
+      // Instead, rely on the profiles table for user management
+      const formattedUsers = profiles.map(profile => {
         return {
-          id: user.id,
-          name: profile?.first_name || user.email?.split('@')[0] || 'Unknown',
-          email: user.email || 'No email',
-          role: (profile?.role as UserRole) || 'user',
-          team: profile?.team || '',
-          can_escalate: profile?.can_escalate || false,
+          id: profile.id,
+          name: profile.first_name || 'Unknown',
+          email: profile.id, // We don't have direct access to email
+          role: (profile.role as UserRole) || 'user',
+          team: profile.team || '',
+          can_escalate: profile.can_escalate || false,
         };
       });
       
@@ -134,28 +129,13 @@ export function AdminUsers() {
         toast.success("User updated successfully");
       } else {
         // Create new user
-        const { data, error } = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: "tempPassword123", // Users should change this
-          email_confirm: true,
+        // Note: The user must be created through the auth signup process first
+        // This is a limitation of Supabase's RLS and auth system
+        toast.error("Direct user creation is not supported", {
+          description: "Users must sign up through the authentication flow first.",
         });
-        
-        if (error) throw error;
-        
-        // Now update the profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            role: formData.role,
-            first_name: formData.name,
-            team: formData.team,
-            can_escalate: formData.can_escalate,
-          })
-          .eq('id', data.user.id);
-        
-        if (profileError) throw profileError;
-        
-        toast.success("User created successfully");
+        setIsDialogOpen(false);
+        return;
       }
       
       setIsDialogOpen(false);
@@ -188,7 +168,12 @@ export function AdminUsers() {
             Refresh
           </Button>
           
-          <Button onClick={handleAddUser} className="flex items-center">
+          <Button 
+            onClick={handleAddUser} 
+            className="flex items-center"
+            disabled={true}
+            title="Direct user creation is not supported. Users must sign up through the authentication flow."
+          >
             <UserPlus className="h-4 w-4 mr-2" />
             Add User
           </Button>
@@ -207,7 +192,7 @@ export function AdminUsers() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>User ID</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Team</TableHead>
                 <TableHead>Escalation</TableHead>
@@ -219,7 +204,7 @@ export function AdminUsers() {
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">{user.email}</TableCell>
                     <TableCell>
                       <Badge 
                         variant={user.role === 'admin' ? 'default' : 'outline'}
@@ -267,95 +252,83 @@ export function AdminUsers() {
             <DialogDescription>
               {editingUser 
                 ? 'Update user details and permissions' 
-                : 'Create a new user and set their access permissions'}
+                : 'Direct user creation is not supported. Users must sign up through the authentication flow.'}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid gap-4 py-4">
-            {!editingUser && (
+          {editingUser && (
+            <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right">
-                  Email
+                <Label htmlFor="name" className="text-right">
+                  Name
                 </Label>
                 <Input
-                  id="email"
-                  type="email"
+                  id="name"
                   className="col-span-3"
-                  value={formData.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  placeholder="user@example.com"
+                  value={formData.name}
+                  onChange={(e) => handleChange('name', e.target.value)}
+                  placeholder="Display Name"
                 />
               </div>
-            )}
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                className="col-span-3"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Display Name"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="role" className="text-right">
-                Role
-              </Label>
-              <Select 
-                value={formData.role} 
-                onValueChange={(value) => handleChange('role', value as UserRole)}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="team" className="text-right">
-                Team
-              </Label>
-              <Input
-                id="team"
-                className="col-span-3"
-                value={formData.team}
-                onChange={(e) => handleChange('team', e.target.value)}
-                placeholder="IT Support, Network, etc."
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="can-escalate" className="text-right">
-                Can Escalate
-              </Label>
-              <div className="flex items-center col-span-3">
-                <Switch
-                  id="can-escalate"
-                  checked={formData.can_escalate}
-                  onCheckedChange={(checked) => handleChange('can_escalate', checked)}
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="role" className="text-right">
+                  Role
+                </Label>
+                <Select 
+                  value={formData.role} 
+                  onValueChange={(value) => handleChange('role', value as UserRole)}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="user">User</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="team" className="text-right">
+                  Team
+                </Label>
+                <Input
+                  id="team"
+                  className="col-span-3"
+                  value={formData.team}
+                  onChange={(e) => handleChange('team', e.target.value)}
+                  placeholder="IT Support, Network, etc."
                 />
-                <span className="ml-2 text-sm text-muted-foreground">
-                  Allow user to receive escalation emails
-                </span>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="can-escalate" className="text-right">
+                  Can Escalate
+                </Label>
+                <div className="flex items-center col-span-3">
+                  <Switch
+                    id="can-escalate"
+                    checked={formData.can_escalate}
+                    onCheckedChange={(checked) => handleChange('can_escalate', checked)}
+                  />
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    Allow user to receive escalation emails
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
-              {editingUser ? 'Update' : 'Create'}
-            </Button>
+            {editingUser && (
+              <Button onClick={handleSubmit}>
+                Update
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

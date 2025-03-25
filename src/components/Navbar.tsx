@@ -15,6 +15,7 @@ import { Menu, X, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserRole } from "@/types/user";
+import { useAutoLogout } from "@/hooks/use-auto-logout";
 
 interface NavbarProps {
   isAdmin?: boolean;
@@ -27,6 +28,9 @@ export function Navbar({ isAdmin }: NavbarProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  
+  // Use auto-logout hook
+  useAutoLogout({ isAuthenticated });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -123,9 +127,9 @@ export function Navbar({ isAdmin }: NavbarProps) {
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2">
                 <img 
-                  src="public/favicon.png" 
-                  alt="Lilac WiFi Logo" 
-                  className="h-8 w-8 rounded-full"
+                  src="/favicon.png" 
+                  alt="WiFi Logo" 
+                  className="h-8 w-8"
                 />
                 <span className="text-xl font-display font-semibold tracking-tight">
                   WiFi Support
@@ -145,9 +149,11 @@ export function Navbar({ isAdmin }: NavbarProps) {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <span className="h-8 w-8 rounded-full violet-gradient flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">L</span>
-              </span>
+              <img 
+                src="/favicon.png" 
+                alt="WiFi Logo" 
+                className="h-8 w-8"
+              />
               <span className="text-xl font-display font-semibold tracking-tight">
                 WiFi Support
               </span>

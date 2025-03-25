@@ -10,6 +10,7 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
+import { RequestTracker } from "@/components/RequestTracker";
 
 export default function Index() {
   return (
@@ -30,23 +31,15 @@ export default function Index() {
             <Tabs defaultValue="guest" className="max-w-3xl mx-auto">
               <TabsList className="grid w-full grid-cols-2 mb-8">
                 <TabsTrigger value="guest">Guest Request</TabsTrigger>
-                <TabsTrigger value="admin">Admin Access</TabsTrigger>
+                <TabsTrigger value="track">Track Request</TabsTrigger>
               </TabsList>
               
               <TabsContent value="guest">
                 <GuestForm />
               </TabsContent>
               
-              <TabsContent value="admin">
-                <div className="form-container text-center py-12">
-                  <h3 className="heading-3 mb-4">Admin Access Required</h3>
-                  <p className="text-muted-foreground mb-6">
-                    You need administrator privileges to access the dashboard and manage WiFi requests.
-                  </p>
-                  <Button asChild>
-                    <Link to="/login">Log In as Admin</Link>
-                  </Button>
-                </div>
+              <TabsContent value="track">
+                <RequestTracker />
               </TabsContent>
             </Tabs>
           </div>
