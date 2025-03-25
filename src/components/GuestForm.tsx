@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,7 +90,10 @@ export function GuestForm() {
       }
       
       if (permission === "granted") {
-        showNotification("WiFi Request Submitted", "Your request has been received and will be processed shortly.");
+        showNotification({
+          title: "WiFi Request Submitted",
+          body: "Your request has been received and will be processed shortly."
+        });
       }
       
       // Reset form after submission
