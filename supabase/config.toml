@@ -1,1 +1,6 @@
+
 project_id = "bwujvdkvplxsfcakzupj"
+[functions.escalate-requests]
+verify_jwt = false
+[functions.setup-cron]
+verify_jwt = false

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +21,8 @@ export function EscalationSettings() {
   const [newEmail, setNewEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCronSetup, setIsCronSetup] = useState(false);
+  const [isSettingUpCron, setIsSettingUpCron] = useState(false);
 
   useEffect(() => {
     fetchEscalationSettings();
@@ -40,7 +41,6 @@ export function EscalationSettings() {
       }
       
       if (data) {
-        // Parse the emails from the JSONB field and ensure they're all strings
         const emailList = Array.isArray(data.emails) 
           ? data.emails.map(email => String(email)) 
           : [];
@@ -57,7 +57,6 @@ export function EscalationSettings() {
   };
 
   const handleAddEmail = () => {
-    // Simple email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
       toast.error("Please enter a valid email address");
@@ -90,7 +89,6 @@ export function EscalationSettings() {
       }
       
       if (data) {
-        // Update existing record
         const { error } = await supabase
           .from('escalation_settings')
           .update({ emails: emails })
@@ -98,7 +96,6 @@ export function EscalationSettings() {
           
         if (error) throw error;
       } else {
-        // Insert new record
         const { error } = await supabase
           .from('escalation_settings')
           .insert([{ emails: emails }]);
@@ -112,6 +109,25 @@ export function EscalationSettings() {
       toast.error("Failed to save escalation settings");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const setupEscalationCron = async () => {
+    setIsSettingUpCron(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('setup-cron');
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Escalation schedule configured successfully");
+      setIsCronSetup(true);
+    } catch (error: any) {
+      console.error("Error setting up escalation schedule:", error);
+      toast.error("Failed to set up escalation schedule");
+    } finally {
+      setIsSettingUpCron(false);
     }
   };
 
@@ -182,6 +198,35 @@ export function EscalationSettings() {
                   </div>
                 )}
               </div>
+            </div>
+            
+            <div className="border-t pt-4">
+              <Label className="mb-2 block">Automatic Escalation</Label>
+              <div className="bg-accent/50 rounded-md p-4 text-sm space-y-2">
+                <p>When enabled, the system will automatically:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Escalate requests that remain <strong>pending</strong> for more than <strong>20 minutes</strong></li>
+                  <li>Escalate requests that remain <strong>in progress</strong> for more than <strong>45 minutes</strong></li>
+                </ul>
+                <p>Escalated requests will trigger email notifications to all configured addresses above.</p>
+              </div>
+              <Button 
+                variant="outline" 
+                className="mt-3" 
+                onClick={setupEscalationCron}
+                disabled={isSettingUpCron || isCronSetup}
+              >
+                {isSettingUpCron ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2"></div>
+                    Setting Up...
+                  </>
+                ) : isCronSetup ? (
+                  "Escalation Schedule Configured"
+                ) : (
+                  "Setup Automatic Escalation"
+                )}
+              </Button>
             </div>
           </>
         )}

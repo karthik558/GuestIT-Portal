@@ -24,9 +24,32 @@ export const submitWifiRequest = async (formData: WifiRequestFormData) => {
   };
   
   try {
+    // Generate custom tracking ID
+    let trackingId = generateTrackingId(formData.name, formData.room_number);
+    
+    // Check if this tracking ID already exists to avoid duplicates
+    const { data: existingRequest, error: checkError } = await supabase
+      .from('wifi_requests')
+      .select('id')
+      .eq('id', trackingId)
+      .maybeSingle();
+      
+    if (checkError) {
+      console.error('Error checking for existing ID:', checkError);
+    }
+    
+    // If ID exists, append a random number to make it unique
+    if (existingRequest) {
+      trackingId = `${trackingId}-${Math.floor(Math.random() * 100)}`;
+    }
+    
+    // Insert with custom ID
     const { data, error } = await supabase
       .from('wifi_requests')
-      .insert(typedData)
+      .insert({
+        ...typedData,
+        id: trackingId
+      })
       .select('id')
       .single();
     
@@ -47,3 +70,15 @@ export const submitWifiRequest = async (formData: WifiRequestFormData) => {
     return { success: false, error, data: null };
   }
 };
+
+// Helper function to generate tracking ID
+function generateTrackingId(name: string, roomNumber: string): string {
+  // Get first 4 letters of name (or fewer if name is shorter)
+  const namePrefix = name.substring(0, 4).toLowerCase();
+  
+  // Clean up room number (remove spaces, etc.)
+  const cleanRoomNumber = roomNumber.replace(/\s+/g, '');
+  
+  // Combine to create the tracking ID
+  return `${namePrefix}${cleanRoomNumber}`;
+}
