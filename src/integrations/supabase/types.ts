@@ -143,6 +143,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      setup_escalation_cron: {
+        Args: {
+          function_url: string
+          auth_key: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       device_type: "smartphone" | "laptop" | "tablet" | "other"

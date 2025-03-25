@@ -114,18 +114,40 @@ serve(async (req) => {
       
       // 3. Send email notification
       try {
-        // We're using the system's default email service
-        // This would normally use a dedicated email service like Resend
-        // For now, we're just logging that we would send an email
+        // Currently using a mock email service
+        // In a production environment, you would integrate with a proper email service like Resend.com
         
-        console.log(`Would send escalation email to: ${emails.join(', ')}`)
-        console.log(`Email subject: WiFi Request Escalated - ${request.id}`)
-        console.log(`Email body: Request from ${request.name} (${request.email}) has been escalated.`)
-        console.log(`Room: ${request.room_number}, Issue: ${request.issue_type}, Device: ${request.device_type}`)
-        console.log(`Description: ${request.description}`)
+        // Log the email that would be sent
+        const emailSubject = `WiFi Request Escalated - ${request.id}`;
+        const emailBody = `
+Request from ${request.name} (${request.email}) has been escalated.
+Room: ${request.room_number}
+Issue Type: ${request.issue_type}
+Device Type: ${request.device_type}
+Description: ${request.description}
+
+This request was automatically escalated because it was ${wasStatus} without resolution.
+
+Please address this request as soon as possible.
+`;
         
-        // This is where you would normally call your email sending function
-        // Example: await sendEmail(emails, subject, body)
+        console.log(`Would send escalation email to: ${emails.join(', ')}`);
+        console.log(`Email subject: ${emailSubject}`);
+        console.log(`Email body: ${emailBody}`);
+        
+        // To implement actual email sending, you would use a service like Resend
+        // This would require adding the RESEND_API_KEY to your Supabase secrets
+        /*
+        Example implementation with Resend:
+        
+        const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+        await resend.emails.send({
+          from: "WiFi Support <support@yourdomain.com>",
+          to: emails,
+          subject: emailSubject,
+          text: emailBody,
+        });
+        */
       } catch (emailError) {
         console.error(`Error sending email for request ${request.id}:`, emailError)
       }
