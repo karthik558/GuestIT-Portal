@@ -203,7 +203,7 @@ export default function Login() {
               </Button>
               
               <div className="text-center text-xs text-muted-foreground">
-                <p>Sign in with your Supabase user credentials</p>
+                <p>Sign in to your account to access the dashboard.</p>
               </div>
             </form>
           </div>
