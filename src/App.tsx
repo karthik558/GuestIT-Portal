@@ -1,3 +1,5 @@
+
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,49 +9,39 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import { useTheme } from "./hooks/use-theme";
+import { createContext } from "react";
+import { NotificationProvider } from "./contexts/NotificationContext";
+
+export type ThemeContextType = {
+  toggleTheme: () => void;
+};
+
+export const ThemeContext = createContext<ThemeContextType>({ toggleTheme: () => {} });
 
 const queryClient = new QueryClient();
 
-const localTheme = localStorage.getItem('theme');
-const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-const initialTheme = localTheme || systemTheme;
-
 function App() {
-  useEffect(() => {
-    if (initialTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const isDark = document.documentElement.classList.contains("dark");
-    if (isDark) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem('theme', 'light');
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem('theme', 'dark');
-    }
-  };
-
-  const themeContext = { toggleTheme };
-
+  const { toggleTheme } = useTheme();
+  
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <ThemeContext.Provider value={{ toggleTheme }}>
+        <NotificationProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </NotificationProvider>
+      </ThemeContext.Provider>
     </QueryClientProvider>
   );
 }

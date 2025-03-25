@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/ui/mode-toggle";
+import { CustomModeToggle } from "@/components/ui/custom-mode-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,10 +12,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import {
-  Dashboard as DashboardIcon,
-  Login as LoginIcon,
-  LogOut as LogOutIcon,
-  User as UserIcon,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  User,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -58,36 +59,36 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
         </div>
         
         <div className="flex items-center gap-4">
-          <ModeToggle />
+          <CustomModeToggle />
           
           {isAdmin && isLoggedIn ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <UserIcon className="h-4 w-4 mr-2" />
+                  <User className="h-4 w-4 mr-2" />
                   <span>Admin</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => navigate("/admin")}>
-                  <DashboardIcon className="h-4 w-4 mr-2" />
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
                   Dashboard
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
-                  <LogOutIcon className="h-4 w-4 mr-2" />
+                  <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : isLoggedIn ? (
             <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOutIcon className="h-4 w-4 mr-2" />
+              <LogOut className="h-4 w-4 mr-2" />
               Logout
             </Button>
           ) : pathname !== "/login" && (
             <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
-              <LoginIcon className="h-4 w-4 mr-2" />
+              <LogIn className="h-4 w-4 mr-2" />
               Staff Login
             </Button>
           )}
