@@ -75,8 +75,8 @@ export function GuestForm() {
             name: formData.name,
             email: formData.email,
             room_number: formData.roomNumber,
-            device_type: formData.deviceType as any,
-            issue_type: formData.issueType as any,
+            device_type: formData.deviceType,
+            issue_type: formData.issueType,
             description: formData.description,
             status: "pending"
           }
@@ -91,15 +91,6 @@ export function GuestForm() {
       if (data && data.length > 0) {
         setSubmittedRequestId(data[0].id);
         setIsSuccessDialogOpen(true);
-        
-        // Request notification permission and show notification for admin
-        if (permission !== "granted") {
-          await requestPermission();
-        }
-        
-        // Show notification for admin when a new request is submitted
-        // You would want this to happen on the admin side, not the guest side
-        // We'll implement this separately in the admin component
       }
       
       toast.success("Your WiFi assistance request has been submitted!", {

@@ -110,30 +110,31 @@ export function Stats({ stats }: StatsProps) {
             <CardTitle>Request Status Distribution</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <ChartContainer 
-              config={chartConfig} 
-              className="aspect-[4/3] w-full p-4"
-            >
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  innerRadius={40}
-                  fill="#8884d8"
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Legend />
-                <Tooltip />
-              </PieChart>
-            </ChartContainer>
+            <div className="h-[300px] w-full p-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    innerRadius={40}
+                    fill="#8884d8"
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ name, percent }) => 
+                      `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" />
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
         
@@ -142,25 +143,24 @@ export function Stats({ stats }: StatsProps) {
             <CardTitle>Requests by Status</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <ChartContainer 
-              config={chartConfig} 
-              className="aspect-[4/3] w-full p-4"
-            >
-              <RechartBarChart
-                data={barData}
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 10,
-                  bottom: 10,
-                }}
-              >
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" name="Requests" fill="#6f2c6e" radius={[4, 4, 0, 0]} />
-              </RechartBarChart>
-            </ChartContainer>
+            <div className="h-[300px] w-full p-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartBarChart
+                  data={barData}
+                  margin={{
+                    top: 20,
+                    right: 30,
+                    left: 10,
+                    bottom: 30,
+                  }}
+                >
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" name="Requests" fill="#6f2c6e" radius={[4, 4, 0, 0]} />
+                </RechartBarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>

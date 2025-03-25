@@ -134,8 +134,8 @@ export function RequestTracker() {
       
       <Separator />
       
-      <div className="flex items-end gap-4">
-        <div className="flex-1 space-y-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+        <div className="flex-1 space-y-2 w-full">
           <Label htmlFor="requestId">Request ID</Label>
           <Input
             id="requestId"
@@ -147,7 +147,7 @@ export function RequestTracker() {
         <Button 
           onClick={handleSearch} 
           disabled={isLoading}
-          className="mb-[2px]"
+          className="mb-[2px] w-full sm:w-auto"
         >
           {isLoading ? "Searching..." : "Track Request"}
         </Button>
@@ -181,11 +181,11 @@ export function RequestTracker() {
                 </div>
                 <div>
                   <Label className="text-sm text-muted-foreground">Device Type</Label>
-                  <p className="font-medium">{request.device_type}</p>
+                  <p className="font-medium capitalize">{request.device_type}</p>
                 </div>
                 <div>
                   <Label className="text-sm text-muted-foreground">Issue Type</Label>
-                  <p className="font-medium">{request.issue_type}</p>
+                  <p className="font-medium capitalize">{request.issue_type}</p>
                 </div>
               </div>
               

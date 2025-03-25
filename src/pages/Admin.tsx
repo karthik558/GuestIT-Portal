@@ -8,12 +8,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserRole } from "@/types/user";
 import { UserProfile } from "@/types/user";
+import { useAutoLogout } from "@/hooks/use-auto-logout";
 
 export default function Admin() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Use auto-logout hook
+  useAutoLogout({ isAuthenticated, inactivityTime: 3600000 }); // 1 hour
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -32,6 +37,8 @@ export default function Admin() {
           navigate("/login");
           return;
         }
+        
+        setIsAuthenticated(true);
         
         // Check user role from profiles table
         try {

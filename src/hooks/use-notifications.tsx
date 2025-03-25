@@ -5,17 +5,25 @@ interface NotificationOptions {
   title: string;
   body: string;
   icon?: string;
-  sound?: string;
+  sound?: boolean;
 }
 
 export function useNotifications() {
   const [permission, setPermission] = useState<NotificationPermission | "default">("default");
-  const [notificationAudio] = useState<HTMLAudioElement | null>(
-    typeof Audio !== "undefined" ? new Audio("/notification-sound.mp3") : null
-  );
+  const [notificationAudio, setNotificationAudio] = useState<HTMLAudioElement | null>(null);
 
-  // Check notification permission on mount
+  // Initialize notification sound on mount (client-side only)
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    // Create audio element for notification sound
+    if (typeof Audio !== "undefined") {
+      const audio = new Audio("/notification-sound.mp3");
+      audio.preload = "auto";
+      setNotificationAudio(audio);
+    }
+    
+    // Check notification permission on mount
     if (!("Notification" in window)) {
       console.log("This browser does not support desktop notification");
       return;

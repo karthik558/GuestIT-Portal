@@ -65,8 +65,8 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
   return (
     <Card className="card-hover overflow-hidden animate-scale-in">
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">{request.name}</CardTitle>
+        <div className="flex flex-wrap justify-between items-center gap-2">
+          <CardTitle className="text-lg line-clamp-1">{request.name}</CardTitle>
           <Badge variant="outline" className={`${getStatusColor(request.status)} text-white`}>
             {getStatusText(request.status)}
           </Badge>
@@ -76,19 +76,19 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <p className="text-muted-foreground">Room:</p>
-            <p className="font-medium">{roomNumber}</p>
+            <p className="font-medium line-clamp-1">{roomNumber}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Device:</p>
-            <p className="font-medium capitalize">{deviceType}</p>
+            <p className="font-medium capitalize line-clamp-1">{deviceType}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Issue:</p>
-            <p className="font-medium capitalize">{issueType}</p>
+            <p className="font-medium capitalize line-clamp-1">{issueType}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Submitted:</p>
-            <p className="font-medium">{timeAgo}</p>
+            <p className="font-medium line-clamp-1">{timeAgo}</p>
           </div>
         </div>
       </CardContent>
