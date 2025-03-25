@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -24,15 +23,16 @@ import {
 } from "@/components/ui/dialog";
 import { Copy } from "lucide-react";
 import { useNotifications } from "@/hooks/use-notifications";
+import { submitWifiRequest, WifiRequestFormData } from "@/utils/formSubmission";
 
 export function GuestForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<WifiRequestFormData>({
     name: "",
     email: "",
-    roomNumber: "",
-    deviceType: "",
-    issueType: "",
+    room_number: "",
+    device_type: "smartphone",
+    issue_type: "connect",
     description: ""
   });
   const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
@@ -45,7 +45,17 @@ export function GuestForm() {
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "deviceType") {
+      setFormData((prev) => ({ 
+        ...prev, 
+        device_type: value as "smartphone" | "laptop" | "tablet" | "other"
+      }));
+    } else if (name === "issueType") {
+      setFormData((prev) => ({ 
+        ...prev, 
+        issue_type: value as "connect" | "slow" | "disconnect" | "login" | "other"
+      }));
+    }
   };
 
   const handleCopyRequestId = () => {
@@ -63,47 +73,34 @@ export function GuestForm() {
       console.log("Submitting form data:", formData);
       
       // Validate required fields
-      if (!formData.name || !formData.email || !formData.roomNumber || !formData.deviceType || !formData.issueType) {
+      if (!formData.name || !formData.email || !formData.room_number || !formData.device_type || !formData.issue_type) {
         throw new Error("Please fill in all required fields");
       }
       
-      // Submit data to Supabase
-      const { data, error } = await supabase
-        .from('wifi_requests')
-        .insert([
-          {
-            name: formData.name,
-            email: formData.email,
-            room_number: formData.roomNumber,
-            device_type: formData.deviceType,
-            issue_type: formData.issueType,
-            description: formData.description,
-            status: "pending"
-          }
-        ])
-        .select();
+      // Submit using our utility function
+      const result = await submitWifiRequest(formData);
       
-      console.log("Supabase response:", { data, error });
-      
-      if (error) throw error;
+      if (!result.success) {
+        throw result.error;
+      }
       
       // Store the submitted request ID
-      if (data && data.length > 0) {
-        setSubmittedRequestId(data[0].id);
+      if (result.data) {
+        setSubmittedRequestId(result.data.id);
         setIsSuccessDialogOpen(true);
       }
       
-      toast.success("Your WiFi assistance request has been submitted!", {
-        description: "An IT staff member will assist you shortly.",
-      });
+      if (permission === "granted") {
+        showNotification("WiFi Request Submitted", "Your request has been received and will be processed shortly.");
+      }
       
       // Reset form after submission
       setFormData({
         name: "",
         email: "",
-        roomNumber: "",
-        deviceType: "",
-        issueType: "",
+        room_number: "",
+        device_type: "smartphone",
+        issue_type: "connect",
         description: ""
       });
     } catch (error: any) {
@@ -156,21 +153,21 @@ export function GuestForm() {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="roomNumber">Room Number</Label>
+            <Label htmlFor="room_number">Room Number</Label>
             <Input
-              id="roomNumber"
-              name="roomNumber"
+              id="room_number"
+              name="room_number"
               placeholder="e.g. 101"
               required
-              value={formData.roomNumber}
+              value={formData.room_number}
               onChange={handleChange}
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="deviceType">Device Type</Label>
+            <Label htmlFor="device_type">Device Type</Label>
             <Select 
-              value={formData.deviceType} 
+              value={formData.device_type} 
               onValueChange={(value) => handleSelectChange("deviceType", value)}
               required
             >
@@ -187,9 +184,9 @@ export function GuestForm() {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="issueType">Issue Type</Label>
+            <Label htmlFor="issue_type">Issue Type</Label>
             <Select 
-              value={formData.issueType} 
+              value={formData.issue_type} 
               onValueChange={(value) => handleSelectChange("issueType", value)}
               required
             >
