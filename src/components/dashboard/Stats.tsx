@@ -41,19 +41,13 @@ export function Stats({ stats }: StatsProps) {
     { name: 'Escalated', value: stats.escalated },
   ].filter(item => item.value > 0); // Only show non-zero values
 
+  // For bar chart, we'll display one bar per category unlike the previous implementation
   const barData = [
-    { name: 'Pending', value: stats.pending },
-    { name: 'In Progress', value: stats.inProgress },
-    { name: 'Completed', value: stats.completed },
-    { name: 'Escalated', value: stats.escalated },
+    { name: 'Pending', value: stats.pending, color: COLORS[0] },
+    { name: 'In Progress', value: stats.inProgress, color: COLORS[1] },
+    { name: 'Completed', value: stats.completed, color: COLORS[2] },
+    { name: 'Escalated', value: stats.escalated, color: COLORS[3] },
   ];
-
-  const chartConfig = {
-    pending: { color: COLORS[0] },
-    inProgress: { color: COLORS[1] },
-    completed: { color: COLORS[2] },
-    escalated: { color: COLORS[3] },
-  };
 
   return (
     <div className="space-y-6">
@@ -199,29 +193,29 @@ export function Stats({ stats }: StatsProps) {
                       border: '1px solid #e2e8f0',
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
-                    formatter={(value, name, props) => {
-                      const index = props.payload.index;
-                      return [value, <span style={{ color: COLORS[index] }}>{name}</span>];
-                    }}
+                    formatter={(value, name) => [value, name]}
                   />
                   <Legend 
+                    layout="horizontal"
                     verticalAlign="top" 
-                    height={36} 
+                    height={36}
                     formatter={(value, entry, index) => (
                       <span style={{ color: COLORS[index % COLORS.length] }}>
                         {value}
                       </span>
                     )}
                   />
+                  {/* Using multiple bars with customized appearance */}
                   {barData.map((entry, index) => (
                     <Bar 
                       key={`bar-${index}`}
                       dataKey="value" 
                       name={entry.name}
-                      fill={COLORS[index % COLORS.length]}
+                      stackId={index} // Each bar gets its own stack
+                      fill={entry.color}
                       radius={[4, 4, 0, 0]} 
                       barSize={36}
-                      maxBarSize={50}
+                      maxBarSize={40}
                     />
                   ))}
                 </RechartBarChart>
