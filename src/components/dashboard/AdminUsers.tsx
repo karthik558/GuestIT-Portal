@@ -54,24 +54,58 @@ export function AdminUsers() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      // First get auth users via the profiles table
+      // Get auth users
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error("Auth error:", authError);
+        // Fallback to profiles table only
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*');
+        
+        if (profilesError) throw profilesError;
+        
+        // Format profiles without auth data
+        const formattedUsers = profiles.map(profile => {
+          return {
+            id: profile.id,
+            name: profile.first_name || 'Unknown',
+            email: "User ID: " + profile.id.substring(0, 8) + "...",
+            role: (profile.role as UserRole) || 'user',
+            team: profile.team || '',
+            can_escalate: profile.can_escalate || false,
+          };
+        });
+        
+        setUsers(formattedUsers);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Get profiles to match with auth users
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
       
       if (profilesError) throw profilesError;
       
-      // Get user emails from auth.users
-      // Note: We're not using admin.listUsers since it requires additional permissions
-      // Instead, rely on the profiles table for user management
-      const formattedUsers = profiles.map(profile => {
+      // Map profiles to users
+      const userProfiles = new Map();
+      profiles.forEach(profile => {
+        userProfiles.set(profile.id, profile);
+      });
+      
+      // Create combined user list
+      const formattedUsers = authData.users.map(user => {
+        const profile = userProfiles.get(user.id);
         return {
-          id: profile.id,
-          name: profile.first_name || 'Unknown',
-          email: profile.id, // We don't have direct access to email
-          role: (profile.role as UserRole) || 'user',
-          team: profile.team || '',
-          can_escalate: profile.can_escalate || false,
+          id: user.id,
+          name: profile?.first_name || user.user_metadata?.name || 'Unknown',
+          email: user.email || "No email",
+          role: (profile?.role as UserRole) || 'user',
+          team: profile?.team || '',
+          can_escalate: profile?.can_escalate || false,
         };
       });
       
@@ -192,7 +226,7 @@ export function AdminUsers() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>User ID</TableHead>
+                <TableHead>Email / ID</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Team</TableHead>
                 <TableHead>Escalation</TableHead>

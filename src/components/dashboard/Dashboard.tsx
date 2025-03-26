@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +13,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { EscalationSettings as EscalationSettingsType } from "@/types/escalation";
 import { useNotifications } from "@/hooks/use-notifications";
+import { DatePickerWithRange } from "../ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { UserProfile } from "@/types/user";
 
 type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
 
@@ -28,10 +33,15 @@ interface WifiRequest {
   comments?: { text: string; timestamp: Date; user: string }[];
 }
 
-export function Dashboard() {
+interface DashboardProps {
+  userProfile: UserProfile | null;
+}
+
+export function Dashboard({ userProfile }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("all");
   const [activeDashboardTab, setActiveDashboardTab] = useState("requests");
   const [requests, setRequests] = useState<WifiRequest[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<WifiRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<WifiRequest | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +53,12 @@ export function Dashboard() {
     escalated: 0,
     avgResponseTime: "N/A",
     avgResolutionTime: "N/A",
+  });
+  
+  // Date range state for filtering
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date())
   });
   
   const { permission, requestPermission, showNotification } = useNotifications();
@@ -82,6 +98,40 @@ export function Dashboard() {
     };
   }, [permission]);
 
+  // Filter requests when date or activeTab changes
+  useEffect(() => {
+    if (!requests.length) return;
+    
+    let filtered = [...requests];
+    
+    // Filter by date range if set
+    if (date && date.from) {
+      filtered = filtered.filter(request => {
+        const requestDate = new Date(request.created_at);
+        if (date.from && requestDate < date.from) return false;
+        if (date.to && requestDate > date.to) return false;
+        return true;
+      });
+    }
+    
+    // Filter by status
+    if (activeTab !== "all") {
+      filtered = filtered.filter(request => {
+        if (activeTab === "pending") return request.status === "pending";
+        if (activeTab === "in-progress") return request.status === "in-progress";
+        if (activeTab === "completed") return request.status === "completed";
+        if (activeTab === "escalated") return request.status === "escalated";
+        return true;
+      });
+    } else {
+      // "All" tab shows all active (non-completed) requests
+      filtered = filtered.filter(r => r.status !== "completed");
+    }
+    
+    setFilteredRequests(filtered);
+    
+  }, [requests, activeTab, date]);
+
   const fetchRequests = async () => {
     setIsLoading(true);
     try {
@@ -98,17 +148,8 @@ export function Dashboard() {
 
       setRequests(formattedRequests);
       
-      const statData = {
-        total: formattedRequests.length,
-        pending: formattedRequests.filter(r => r.status === "pending").length,
-        inProgress: formattedRequests.filter(r => r.status === "in-progress").length,
-        completed: formattedRequests.filter(r => r.status === "completed").length,
-        escalated: formattedRequests.filter(r => r.status === "escalated").length,
-        avgResponseTime: formattedRequests.length > 0 ? "18 minutes" : "N/A",
-        avgResolutionTime: formattedRequests.length > 0 ? "45 minutes" : "N/A",
-      };
-      
-      setStats(statData);
+      // Calculate stats based on date filter
+      calculateStats(formattedRequests);
     } catch (error: any) {
       console.error("Error fetching requests:", error);
       toast.error("Failed to load requests", {
@@ -119,15 +160,32 @@ export function Dashboard() {
     }
   };
 
-  const filteredRequests = activeTab === "all" 
-    ? requests.filter(r => r.status !== "completed")
-    : requests.filter(request => {
-        if (activeTab === "pending") return request.status === "pending";
-        if (activeTab === "in-progress") return request.status === "in-progress";
-        if (activeTab === "completed") return request.status === "completed";
-        if (activeTab === "escalated") return request.status === "escalated";
+  const calculateStats = (allRequests: WifiRequest[]) => {
+    // Filter requests by date range if set
+    let filteredByDate = [...allRequests];
+    
+    if (date && date.from) {
+      filteredByDate = filteredByDate.filter(request => {
+        const requestDate = new Date(request.created_at);
+        if (date.from && requestDate < date.from) return false;
+        if (date.to && requestDate > date.to) return false;
         return true;
       });
+    }
+    
+    // Calculate stats based on filtered requests
+    const statData = {
+      total: filteredByDate.length,
+      pending: filteredByDate.filter(r => r.status === "pending").length,
+      inProgress: filteredByDate.filter(r => r.status === "in-progress").length,
+      completed: filteredByDate.filter(r => r.status === "completed").length,
+      escalated: filteredByDate.filter(r => r.status === "escalated").length,
+      avgResponseTime: filteredByDate.length > 0 ? "18 minutes" : "N/A",
+      avgResolutionTime: filteredByDate.length > 0 ? "45 minutes" : "N/A",
+    };
+    
+    setStats(statData);
+  };
 
   const handleViewDetails = async (request: WifiRequest) => {
     try {
@@ -167,7 +225,7 @@ export function Dashboard() {
           .from('request_comments')
           .insert([{
             request_id: id,
-            user_name: "IT Staff",
+            user_name: userProfile?.first_name || "IT Staff",
             comment_text: comment,
           }]);
         
@@ -189,7 +247,7 @@ export function Dashboard() {
                 {
                   text: comment,
                   timestamp: new Date(),
-                  user: "IT Staff",
+                  user: userProfile?.first_name || "IT Staff",
                 },
               ];
             }
@@ -199,16 +257,6 @@ export function Dashboard() {
           return request;
         })
       );
-      
-      const updatedStats = {
-        ...stats,
-        pending: stats.pending - (activeTab === "pending" ? 1 : 0),
-        inProgress: status === "in-progress" ? stats.inProgress + 1 : (activeTab === "in-progress" ? stats.inProgress - 1 : stats.inProgress),
-        completed: status === "completed" ? stats.completed + 1 : stats.completed,
-        escalated: status === "escalated" ? stats.escalated + 1 : stats.escalated,
-      };
-      
-      setStats(updatedStats);
       
       fetchRequests();
     } catch (error: any) {
@@ -262,15 +310,72 @@ export function Dashboard() {
       }
       
       toast.success("Request escalated successfully");
+      fetchRequests();
     } catch (error) {
       console.error("Error in escalation process:", error);
       toast.error("An error occurred during escalation");
     }
   };
 
+  const onDateRangeChange = (range: DateRange | undefined) => {
+    setDate(range);
+    // Recalculate stats based on the new date range
+    if (requests.length > 0) {
+      calculateStats(requests);
+    }
+  };
+
+  const handleManualCheckEscalation = async () => {
+    try {
+      setIsLoading(true);
+      toast.info("Checking for requests to escalate...");
+      
+      // Call the escalate-requests edge function
+      const { data, error } = await supabase.functions.invoke('escalate-requests');
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log("Escalation check response:", data);
+      
+      if (data.success) {
+        if (data.message.includes("Escalated")) {
+          toast.success(data.message);
+        } else {
+          toast.info(data.message);
+        }
+      } else {
+        toast.error("Failed to check escalations");
+      }
+      
+      // Refresh the requests
+      fetchRequests();
+    } catch (error: any) {
+      console.error("Error checking escalations:", error);
+      toast.error("Failed to check escalations", {
+        description: error.message || "An unexpected error occurred"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Stats stats={stats} />
+      
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
+        <DatePickerWithRange 
+          date={date} 
+          setDate={onDateRangeChange} 
+          className="w-full sm:w-auto"
+        />
+        
+        <Button onClick={handleManualCheckEscalation} disabled={isLoading}>
+          {isLoading ? "Processing..." : "Check for Escalations"}
+        </Button>
+      </div>
       
       <Tabs defaultValue="requests" value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="space-y-4">
         <TabsList className="w-full grid grid-cols-2 md:grid-cols-4">
@@ -315,6 +420,7 @@ export function Dashboard() {
                         roomNumber: request.room_number,
                         deviceType: request.device_type,
                         issueType: request.issue_type,
+                        trackingId: request.id, // Make sure the tracking ID is passed
                       }}
                       onClick={() => handleViewDetails(request)}
                     />
@@ -326,7 +432,7 @@ export function Dashboard() {
                     <div className="text-center space-y-2">
                       <p className="text-lg font-medium">No requests found</p>
                       <p className="text-muted-foreground">
-                        There are no WiFi assistance requests with this status.
+                        There are no WiFi assistance requests with this status in the selected date range.
                       </p>
                     </div>
                   </CardContent>
@@ -365,6 +471,7 @@ export function Dashboard() {
         onClose={() => setIsDetailsOpen(false)}
         isAdmin={true}
         onUpdateStatus={handleUpdateStatus}
+        onEscalate={handleEscalateRequest}
       />
     </div>
   );

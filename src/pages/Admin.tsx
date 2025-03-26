@@ -40,6 +40,9 @@ export default function Admin() {
         
         setIsAuthenticated(true);
         
+        // Get user email from session
+        const userEmail = data.session.user.email || '';
+        
         // Check user role from profiles table
         try {
           const { data: profileData, error: profileError } = await supabase
@@ -61,7 +64,7 @@ export default function Admin() {
           // Create user profile object
           const profile: UserProfile = {
             id: data.session.user.id,
-            email: data.session.user.email || '',
+            email: userEmail,
             role: role,
             created_at: data.session.user.created_at,
             last_sign_in_at: data.session.user.last_sign_in_at,
@@ -123,7 +126,7 @@ export default function Admin() {
             </p>
           </div>
           
-          <Dashboard />
+          <Dashboard userProfile={userProfile} />
         </div>
       </main>
       
