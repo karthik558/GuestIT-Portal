@@ -157,7 +157,7 @@ export function Stats({ stats }: StatsProps) {
         
         <Card className="card-hover overflow-hidden">
           <CardHeader>
-            <CardTitle>Request Volume by Status</CardTitle>
+            <CardTitle>Request by Status</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="h-[300px] w-full p-4">
