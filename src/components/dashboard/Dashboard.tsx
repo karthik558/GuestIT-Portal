@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,7 +15,7 @@ import { EscalationSettings as EscalationSettingsType } from "@/types/escalation
 import { useNotifications } from "@/hooks/use-notifications";
 import { DatePickerWithRange } from "../ui/date-range-picker";
 import { DateRange } from "react-day-picker";
-import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { UserProfile } from "@/types/user";
 
 type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
@@ -29,6 +30,7 @@ interface WifiRequest {
   description: string;
   status: RequestStatus;
   created_at: Date;
+  was_escalated?: boolean;
   comments?: { text: string; timestamp: Date; user: string }[];
 }
 
@@ -95,31 +97,64 @@ export function Dashboard({ userProfile }: DashboardProps) {
   useEffect(() => {
     if (!requests.length) return;
     
+    filterRequests();
+  }, [requests, activeTab, date]);
+
+  const isDateInRange = (dateToCheck: Date): boolean => {
+    if (!date || !date.from) return true;
+    
+    try {
+      // Handle edge case where date.to might be undefined
+      if (date.from && !date.to) {
+        // If only from date is provided, check if target date is on or after from date
+        return dateToCheck >= date.from;
+      }
+      
+      // Normal case with from and to dates
+      return isWithinInterval(dateToCheck, {
+        start: date.from,
+        end: date.to || date.from
+      });
+    } catch (error) {
+      console.error("Error checking date range:", error);
+      return false;
+    }
+  };
+
+  const filterRequests = () => {
     let filtered = [...requests];
     
+    // Apply date filter
     if (date && date.from) {
       filtered = filtered.filter(request => {
         const requestDate = new Date(request.created_at);
-        if (date.from && requestDate < date.from) return false;
-        if (date.to && requestDate > date.to) return false;
-        return true;
+        return isDateInRange(requestDate);
       });
     }
     
+    // Apply status filter
     if (activeTab !== "all") {
-      filtered = filtered.filter(request => {
-        if (activeTab === "pending") return request.status === "pending";
-        if (activeTab === "in-progress") return request.status === "in-progress";
-        if (activeTab === "completed") return request.status === "completed";
-        if (activeTab === "escalated") return request.status === "escalated";
-        return true;
-      });
+      if (activeTab === "escalated") {
+        // Include both currently escalated and completed tasks that were once escalated
+        filtered = filtered.filter(request => 
+          request.status === "escalated" || (request.status === "completed" && request.was_escalated)
+        );
+      } else if (activeTab === "completed") {
+        filtered = filtered.filter(request => request.status === "completed");
+      } else if (activeTab === "pending") {
+        filtered = filtered.filter(request => request.status === "pending");
+      } else if (activeTab === "in-progress") {
+        filtered = filtered.filter(request => request.status === "in-progress");
+      }
     } else {
-      filtered = filtered.filter(r => r.status !== "completed");
+      // For "all" tab, show everything except completed and non-escalated
+      filtered = filtered.filter(r => 
+        r.status !== "completed" || (r.status === "completed" && r.was_escalated)
+      );
     }
     
     setFilteredRequests(filtered);
-  }, [requests, activeTab, date]);
+  };
 
   const fetchRequests = async () => {
     setIsLoading(true);
@@ -130,10 +165,16 @@ export function Dashboard({ userProfile }: DashboardProps) {
       
       if (error) throw error;
 
-      const formattedRequests = data.map(request => ({
-        ...request,
-        created_at: new Date(request.created_at),
-      }));
+      const formattedRequests = data.map(request => {
+        // Track if a request was ever escalated
+        const was_escalated = request.status === "escalated" || Boolean(request.was_escalated);
+        
+        return {
+          ...request,
+          created_at: new Date(request.created_at),
+          was_escalated
+        };
+      });
 
       setRequests(formattedRequests);
       
@@ -149,23 +190,16 @@ export function Dashboard({ userProfile }: DashboardProps) {
   };
 
   const calculateStats = (allRequests: WifiRequest[]) => {
-    let filteredByDate = [...allRequests];
-    
-    if (date && date.from) {
-      filteredByDate = filteredByDate.filter(request => {
-        const requestDate = new Date(request.created_at);
-        if (date.from && requestDate < date.from) return false;
-        if (date.to && requestDate > date.to) return false;
-        return true;
-      });
-    }
+    let filteredByDate = [...allRequests].filter(request => 
+      isDateInRange(new Date(request.created_at))
+    );
     
     const statData = {
       total: filteredByDate.length,
       pending: filteredByDate.filter(r => r.status === "pending").length,
       inProgress: filteredByDate.filter(r => r.status === "in-progress").length,
       completed: filteredByDate.filter(r => r.status === "completed").length,
-      escalated: filteredByDate.filter(r => r.status === "escalated").length,
+      escalated: filteredByDate.filter(r => r.status === "escalated" || (r.status === "completed" && r.was_escalated)).length,
       avgResponseTime: filteredByDate.length > 0 ? "18 minutes" : "N/A",
       avgResolutionTime: filteredByDate.length > 0 ? "45 minutes" : "N/A",
     };
@@ -199,9 +233,19 @@ export function Dashboard({ userProfile }: DashboardProps) {
 
   const handleUpdateStatus = async (id: string, status: RequestStatus, comment?: string) => {
     try {
+      // Check if request was escalated before marking it complete
+      const requestToUpdate = requests.find(r => r.id === id);
+      const was_escalated = requestToUpdate?.status === "escalated" || requestToUpdate?.was_escalated;
+      
+      // Update with was_escalated flag if needed
+      const updateData: any = { status };
+      if (was_escalated) {
+        updateData.was_escalated = true;
+      }
+      
       const { error: updateError } = await supabase
         .from('wifi_requests')
-        .update({ status })
+        .update(updateData)
         .eq('id', id);
       
       if (updateError) throw updateError;
@@ -224,6 +268,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
             const updatedRequest = { 
               ...request, 
               status,
+              was_escalated: was_escalated
             };
             
             if (comment) {
@@ -257,7 +302,10 @@ export function Dashboard({ userProfile }: DashboardProps) {
     try {
       const { error } = await supabase
         .from('wifi_requests')
-        .update({ status: 'escalated' })
+        .update({ 
+          status: 'escalated',
+          was_escalated: true
+        })
         .eq('id', id);
       
       if (error) {
@@ -268,7 +316,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
       
       setRequests(prev => 
         prev.map(req => 
-          req.id === id ? { ...req, status: 'escalated' } : req
+          req.id === id ? { ...req, status: 'escalated', was_escalated: true } : req
         )
       );
       

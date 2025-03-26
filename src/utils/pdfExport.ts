@@ -15,6 +15,7 @@ interface WifiRequest {
   description: string;
   status: RequestStatus;
   created_at: Date;
+  was_escalated?: boolean;
 }
 
 export const generatePDF = async (requests: WifiRequest[], reportType: string, dateRange: { from?: Date, to?: Date }) => {
@@ -54,7 +55,9 @@ export const generatePDF = async (requests: WifiRequest[], reportType: string, d
       pending: filteredRequests.filter(r => r.status === 'pending').length,
       inProgress: filteredRequests.filter(r => r.status === 'in-progress').length,
       completed: filteredRequests.filter(r => r.status === 'completed').length,
-      escalated: filteredRequests.filter(r => r.status === 'escalated').length,
+      escalated: filteredRequests.filter(r => 
+        r.status === 'escalated' || (r.status === 'completed' && r.was_escalated)
+      ).length,
     };
     
     autoTable(doc, {
@@ -83,12 +86,42 @@ export const generatePDF = async (requests: WifiRequest[], reportType: string, d
           req.name,
           req.room_number,
           req.issue_type,
-          req.status,
+          getReportStatus(req),
           new Date(req.created_at).toLocaleDateString()
         ]),
         headStyles: { fillColor: [111, 44, 110] },
         alternateRowStyles: { fillColor: [245, 247, 250] },
       });
+    } else if (reportType === 'escalation') {
+      // Special table for escalation report
+      const lastTable = (doc as any).lastAutoTable;
+      const finalY = lastTable ? lastTable.finalY : 55;
+      
+      // Filter only escalated requests (current or completed)
+      const escalatedRequests = filteredRequests.filter(r => 
+        r.status === 'escalated' || (r.status === 'completed' && r.was_escalated)
+      );
+      
+      if (escalatedRequests.length > 0) {
+        autoTable(doc, {
+          startY: finalY + 15,
+          head: [['Name', 'Room', 'Issue Type', 'Status', 'Submitted', 'Resolution']],
+          body: escalatedRequests.map(req => [
+            req.name,
+            req.room_number,
+            req.issue_type,
+            getReportStatus(req),
+            new Date(req.created_at).toLocaleDateString(),
+            req.status === 'completed' ? 'Resolved' : 'Pending'
+          ]),
+          headStyles: { fillColor: [111, 44, 110] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+        });
+      } else {
+        // Draw text if no escalated requests
+        doc.setFontSize(12);
+        doc.text("No escalated requests found in the selected date range.", 14, finalY + 30);
+      }
     }
     
     // Save PDF
@@ -102,3 +135,18 @@ export const generatePDF = async (requests: WifiRequest[], reportType: string, d
     return null;
   }
 };
+
+// Helper function to get a more descriptive status for reports
+function getReportStatus(request: WifiRequest): string {
+  if (request.status === 'completed' && request.was_escalated) {
+    return 'Completed (Escalated)';
+  }
+  
+  switch (request.status) {
+    case 'pending': return 'Pending';
+    case 'in-progress': return 'In Progress';
+    case 'completed': return 'Completed';
+    case 'escalated': return 'Escalated';
+    default: return request.status;
+  }
+}

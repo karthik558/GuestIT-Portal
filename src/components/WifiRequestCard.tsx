@@ -17,6 +17,7 @@ interface WifiRequest {
   issueType?: string;
   status: RequestStatus;
   created_at: Date;
+  was_escalated?: boolean;
 }
 
 interface WifiRequestCardProps {
@@ -30,7 +31,11 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
   const deviceType = request.device_type || request.deviceType || "";
   const issueType = request.issue_type || request.issueType || "";
 
-  const getStatusColor = (status: RequestStatus) => {
+  const getStatusColor = (status: RequestStatus, wasEscalated?: boolean) => {
+    if (status === "completed" && wasEscalated) {
+      return "bg-purple-500 hover:bg-purple-600";
+    }
+    
     switch (status) {
       case "pending":
         return "bg-yellow-500 hover:bg-yellow-600";
@@ -45,7 +50,11 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
     }
   };
 
-  const getStatusText = (status: RequestStatus) => {
+  const getStatusText = (status: RequestStatus, wasEscalated?: boolean) => {
+    if (status === "completed" && wasEscalated) {
+      return "Resolved (Escalated)";
+    }
+    
     switch (status) {
       case "pending":
         return "Pending";
@@ -67,8 +76,8 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
       <CardHeader className="pb-2">
         <div className="flex flex-wrap justify-between items-center gap-2">
           <CardTitle className="text-lg line-clamp-1">{request.name}</CardTitle>
-          <Badge variant="outline" className={`${getStatusColor(request.status)} text-white`}>
-            {getStatusText(request.status)}
+          <Badge variant="outline" className={`${getStatusColor(request.status, request.was_escalated)} text-white`}>
+            {getStatusText(request.status, request.was_escalated)}
           </Badge>
         </div>
       </CardHeader>

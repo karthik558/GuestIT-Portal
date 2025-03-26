@@ -24,7 +24,14 @@ interface StatsProps {
   };
 }
 
-const COLORS = ['#6f2c6e', '#8e4a8d', '#9b62a9', '#a87dc5', '#edd6f3'];
+// Enhanced color palette with better contrast and visibility
+const COLORS = [
+  '#9b87f5', // Primary Purple for Pending
+  '#0EA5E9', // Ocean Blue for In Progress
+  '#10B981', // Emerald Green for Completed
+  '#F97316', // Bright Orange for Escalated
+  '#D946EF'  // Magenta Pink (reserve)
+];
 
 export function Stats({ stats }: StatsProps) {
   const pieData = [
@@ -32,7 +39,7 @@ export function Stats({ stats }: StatsProps) {
     { name: 'In Progress', value: stats.inProgress },
     { name: 'Completed', value: stats.completed },
     { name: 'Escalated', value: stats.escalated },
-  ];
+  ].filter(item => item.value > 0); // Only show non-zero values
 
   const barData = [
     { name: 'Pending', value: stats.pending },
@@ -42,10 +49,10 @@ export function Stats({ stats }: StatsProps) {
   ];
 
   const chartConfig = {
-    pending: { color: "#FFC107" },
-    inProgress: { color: "#3498DB" },
-    completed: { color: "#2ECC71" },
-    escalated: { color: "#E74C3C" },
+    pending: { color: COLORS[0] },
+    inProgress: { color: COLORS[1] },
+    completed: { color: COLORS[2] },
+    escalated: { color: COLORS[3] },
   };
 
   return (
@@ -67,7 +74,7 @@ export function Stats({ stats }: StatsProps) {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
+            <Clock className="h-4 w-4" style={{ color: COLORS[0] }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pending}</div>
@@ -80,7 +87,7 @@ export function Stats({ stats }: StatsProps) {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle className="h-4 w-4" style={{ color: COLORS[2] }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.completed}</div>
@@ -93,7 +100,7 @@ export function Stats({ stats }: StatsProps) {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Escalated</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <AlertTriangle className="h-4 w-4" style={{ color: COLORS[3] }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.escalated}</div>
@@ -125,13 +132,33 @@ export function Stats({ stats }: StatsProps) {
                     label={({ name, percent }) => 
                       `${name}: ${(percent * 100).toFixed(0)}%`
                     }
+                    labelLine={{ stroke: 'none' }}
                   >
                     {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={COLORS[index % COLORS.length]}
+                        stroke="none"
+                      />
                     ))}
                   </Pie>
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" />
-                  <Tooltip />
+                  <Legend 
+                    layout="horizontal" 
+                    verticalAlign="bottom" 
+                    align="center"
+                    formatter={(value, entry, index) => (
+                      <span style={{ color: COLORS[index % COLORS.length] }}>{value}</span>
+                    )}
+                  />
+                  <Tooltip 
+                    formatter={(value, name) => [value, name]} 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -150,14 +177,53 @@ export function Stats({ stats }: StatsProps) {
                   margin={{
                     top: 20,
                     right: 30,
-                    left: 10,
-                    bottom: 30,
+                    left: 20,
+                    bottom: 40,
                   }}
                 >
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="value" name="Requests" fill="#6f2c6e" radius={[4, 4, 0, 0]} />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fill: '#6B7280' }}
+                    tickLine={{ stroke: '#6B7280' }}
+                    axisLine={{ stroke: '#E5E7EB' }}
+                  />
+                  <YAxis 
+                    tick={{ fill: '#6B7280' }}
+                    tickLine={{ stroke: '#6B7280' }}
+                    axisLine={{ stroke: '#E5E7EB' }}
+                  />
+                  <Tooltip
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                    formatter={(value, name, props) => {
+                      const index = props.payload.index;
+                      return [value, <span style={{ color: COLORS[index] }}>{name}</span>];
+                    }}
+                  />
+                  <Legend 
+                    verticalAlign="top" 
+                    height={36} 
+                    formatter={(value, entry, index) => (
+                      <span style={{ color: COLORS[index % COLORS.length] }}>
+                        {value}
+                      </span>
+                    )}
+                  />
+                  {barData.map((entry, index) => (
+                    <Bar 
+                      key={`bar-${index}`}
+                      dataKey="value" 
+                      name={entry.name}
+                      fill={COLORS[index % COLORS.length]}
+                      radius={[4, 4, 0, 0]} 
+                      barSize={36}
+                      maxBarSize={50}
+                    />
+                  ))}
                 </RechartBarChart>
               </ResponsiveContainer>
             </div>
