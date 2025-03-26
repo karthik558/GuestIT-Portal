@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Clock, CheckCircle, AlertTriangle, BarChart3, Clock8, BarChart } from "lucide-react";
@@ -24,14 +23,13 @@ interface StatsProps {
   };
 }
 
-// Enhanced color palette with better contrast and visibility
-const COLORS = [
-  '#9b87f5', // Primary Purple for Pending
-  '#0EA5E9', // Ocean Blue for In Progress
-  '#10B981', // Emerald Green for Completed
-  '#F97316', // Bright Orange for Escalated
-  '#D946EF'  // Magenta Pink (reserve)
-];
+// Updated color scheme to match the website theme
+const COLORS = {
+  pending: '#98489c',    // Primary Purple
+  inProgress: '#b15db4', // Lighter Purple
+  completed: '#7a3b7d',  // Darker Purple
+  escalated: '#d17ad4',  // Light Purple
+};
 
 export function Stats({ stats }: StatsProps) {
   const pieData = [
@@ -39,14 +37,13 @@ export function Stats({ stats }: StatsProps) {
     { name: 'In Progress', value: stats.inProgress },
     { name: 'Completed', value: stats.completed },
     { name: 'Escalated', value: stats.escalated },
-  ].filter(item => item.value > 0); // Only show non-zero values
+  ].filter(item => item.value > 0);
 
-  // For bar chart, we'll display one bar per category unlike the previous implementation
   const barData = [
-    { name: 'Pending', value: stats.pending, color: COLORS[0] },
-    { name: 'In Progress', value: stats.inProgress, color: COLORS[1] },
-    { name: 'Completed', value: stats.completed, color: COLORS[2] },
-    { name: 'Escalated', value: stats.escalated, color: COLORS[3] },
+    { name: 'Pending', value: stats.pending },
+    { name: 'In Progress', value: stats.inProgress },
+    { name: 'Completed', value: stats.completed },
+    { name: 'Escalated', value: stats.escalated },
   ];
 
   return (
@@ -68,7 +65,7 @@ export function Stats({ stats }: StatsProps) {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Clock className="h-4 w-4" style={{ color: COLORS[0] }} />
+            <Clock className="h-4 w-4" style={{ color: COLORS.pending }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pending}</div>
@@ -81,7 +78,7 @@ export function Stats({ stats }: StatsProps) {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <CheckCircle className="h-4 w-4" style={{ color: COLORS[2] }} />
+            <CheckCircle className="h-4 w-4" style={{ color: COLORS.completed }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.completed}</div>
@@ -94,7 +91,7 @@ export function Stats({ stats }: StatsProps) {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Escalated</CardTitle>
-            <AlertTriangle className="h-4 w-4" style={{ color: COLORS[3] }} />
+            <AlertTriangle className="h-4 w-4" style={{ color: COLORS.escalated }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.escalated}</div>
@@ -108,7 +105,7 @@ export function Stats({ stats }: StatsProps) {
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="card-hover overflow-hidden">
           <CardHeader>
-            <CardTitle>Request Status Distribution</CardTitle>
+            <CardTitle>Status Distribution</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="h-[300px] w-full p-4">
@@ -120,7 +117,6 @@ export function Stats({ stats }: StatsProps) {
                     cy="50%"
                     outerRadius={80}
                     innerRadius={40}
-                    fill="#8884d8"
                     paddingAngle={2}
                     dataKey="value"
                     label={({ name, percent }) => 
@@ -131,7 +127,7 @@ export function Stats({ stats }: StatsProps) {
                     {pieData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={COLORS[index % COLORS.length]}
+                        fill={COLORS[entry.name.toLowerCase().replace(' ', '') as keyof typeof COLORS]}
                         stroke="none"
                       />
                     ))}
@@ -141,7 +137,7 @@ export function Stats({ stats }: StatsProps) {
                     verticalAlign="bottom" 
                     align="center"
                     formatter={(value, entry, index) => (
-                      <span style={{ color: COLORS[index % COLORS.length] }}>{value}</span>
+                      <span style={{ color: COLORS[value.toLowerCase().replace(' ', '') as keyof typeof COLORS] }}>{value}</span>
                     )}
                   />
                   <Tooltip 
@@ -161,7 +157,7 @@ export function Stats({ stats }: StatsProps) {
         
         <Card className="card-hover overflow-hidden">
           <CardHeader>
-            <CardTitle>Requests by Status</CardTitle>
+            <CardTitle>Request Volume by Status</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="h-[300px] w-full p-4">
@@ -195,29 +191,19 @@ export function Stats({ stats }: StatsProps) {
                     }}
                     formatter={(value, name) => [value, name]}
                   />
-                  <Legend 
-                    layout="horizontal"
-                    verticalAlign="top" 
-                    height={36}
-                    formatter={(value, entry, index) => (
-                      <span style={{ color: COLORS[index % COLORS.length] }}>
-                        {value}
-                      </span>
-                    )}
-                  />
-                  {/* Using multiple bars with customized appearance */}
-                  {barData.map((entry, index) => (
-                    <Bar 
-                      key={`bar-${index}`}
-                      dataKey="value" 
-                      name={entry.name}
-                      stackId={index} // Each bar gets its own stack
-                      fill={entry.color}
-                      radius={[4, 4, 0, 0]} 
-                      barSize={36}
-                      maxBarSize={40}
-                    />
-                  ))}
+                  <Bar 
+                    dataKey="value" 
+                    fill="#98489c"
+                    radius={[4, 4, 0, 0]}
+                    barSize={40}
+                  >
+                    {barData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`}
+                        fill={COLORS[entry.name.toLowerCase().replace(' ', '') as keyof typeof COLORS]}
+                      />
+                    ))}
+                  </Bar>
                 </RechartBarChart>
               </ResponsiveContainer>
             </div>
@@ -229,7 +215,7 @@ export function Stats({ stats }: StatsProps) {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Response Time</CardTitle>
-            <Clock8 className="h-4 w-4 text-blue-500" />
+            <Clock8 className="h-4 w-4" style={{ color: '#98489c' }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.avgResponseTime}</div>
@@ -242,7 +228,7 @@ export function Stats({ stats }: StatsProps) {
         <Card className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Resolution Time</CardTitle>
-            <BarChart className="h-4 w-4 text-purple-500" />
+            <BarChart className="h-4 w-4" style={{ color: '#98489c' }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.avgResolutionTime}</div>
