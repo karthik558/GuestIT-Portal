@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -167,7 +166,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
 
       const formattedRequests = data.map(request => {
         // Track if a request was ever escalated
-        const was_escalated = request.status === "escalated" || Boolean(request.was_escalated);
+        const was_escalated = request.status === "escalated";
         
         return {
           ...request,
