@@ -90,6 +90,10 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
             <p className="text-muted-foreground">Submitted:</p>
             <p className="font-medium line-clamp-1">{timeAgo}</p>
           </div>
+          <div className="col-span-2">
+            <p className="text-muted-foreground">Tracking ID:</p>
+            <p className="font-mono text-sm line-clamp-1">{request.id}</p>
+          </div>
         </div>
       </CardContent>
       <CardFooter>

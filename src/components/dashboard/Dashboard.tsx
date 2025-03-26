@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -55,7 +54,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
     avgResolutionTime: "N/A",
   });
   
-  // Date range state for filtering
   const [date, setDate] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date())
@@ -66,12 +64,10 @@ export function Dashboard({ userProfile }: DashboardProps) {
   useEffect(() => {
     fetchRequests();
     
-    // Request notification permission when component mounts
     if (permission !== "granted") {
       requestPermission();
     }
     
-    // Setup subscription for real-time updates
     const channel = supabase
       .channel('public:wifi_requests')
       .on('postgres_changes', { 
@@ -80,14 +76,12 @@ export function Dashboard({ userProfile }: DashboardProps) {
         table: 'wifi_requests' 
       }, (payload) => {
         console.log('New request received:', payload);
-        // Play notification sound and show system notification
         if (payload.new) {
           const newRequest = payload.new as any;
           showNotification({
             title: 'New WiFi Request',
             body: `${newRequest.name} from room ${newRequest.room_number} needs assistance`,
           });
-          // Refresh the requests list
           fetchRequests();
         }
       })
@@ -98,13 +92,11 @@ export function Dashboard({ userProfile }: DashboardProps) {
     };
   }, [permission]);
 
-  // Filter requests when date or activeTab changes
   useEffect(() => {
     if (!requests.length) return;
     
     let filtered = [...requests];
     
-    // Filter by date range if set
     if (date && date.from) {
       filtered = filtered.filter(request => {
         const requestDate = new Date(request.created_at);
@@ -114,7 +106,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
       });
     }
     
-    // Filter by status
     if (activeTab !== "all") {
       filtered = filtered.filter(request => {
         if (activeTab === "pending") return request.status === "pending";
@@ -124,12 +115,10 @@ export function Dashboard({ userProfile }: DashboardProps) {
         return true;
       });
     } else {
-      // "All" tab shows all active (non-completed) requests
       filtered = filtered.filter(r => r.status !== "completed");
     }
     
     setFilteredRequests(filtered);
-    
   }, [requests, activeTab, date]);
 
   const fetchRequests = async () => {
@@ -148,7 +137,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
 
       setRequests(formattedRequests);
       
-      // Calculate stats based on date filter
       calculateStats(formattedRequests);
     } catch (error: any) {
       console.error("Error fetching requests:", error);
@@ -161,7 +149,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
   };
 
   const calculateStats = (allRequests: WifiRequest[]) => {
-    // Filter requests by date range if set
     let filteredByDate = [...allRequests];
     
     if (date && date.from) {
@@ -173,7 +160,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
       });
     }
     
-    // Calculate stats based on filtered requests
     const statData = {
       total: filteredByDate.length,
       pending: filteredByDate.filter(r => r.status === "pending").length,
@@ -319,7 +305,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
 
   const onDateRangeChange = (range: DateRange | undefined) => {
     setDate(range);
-    // Recalculate stats based on the new date range
     if (requests.length > 0) {
       calculateStats(requests);
     }
@@ -330,7 +315,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
       setIsLoading(true);
       toast.info("Checking for requests to escalate...");
       
-      // Call the escalate-requests edge function
       const { data, error } = await supabase.functions.invoke('escalate-requests');
       
       if (error) {
@@ -349,7 +333,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
         toast.error("Failed to check escalations");
       }
       
-      // Refresh the requests
       fetchRequests();
     } catch (error: any) {
       console.error("Error checking escalations:", error);
@@ -420,7 +403,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
                         roomNumber: request.room_number,
                         deviceType: request.device_type,
                         issueType: request.issue_type,
-                        trackingId: request.id, // Make sure the tracking ID is passed
                       }}
                       onClick={() => handleViewDetails(request)}
                     />

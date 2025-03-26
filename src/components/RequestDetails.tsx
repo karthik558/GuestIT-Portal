@@ -40,6 +40,7 @@ interface RequestDetailsProps {
   onClose: () => void;
   isAdmin?: boolean;
   onUpdateStatus?: (id: string, status: RequestStatus, comment?: string) => void;
+  onEscalate?: (id: string) => Promise<void>;
 }
 
 export function RequestDetails({ 
@@ -47,7 +48,8 @@ export function RequestDetails({
   isOpen, 
   onClose, 
   isAdmin = false,
-  onUpdateStatus 
+  onUpdateStatus,
+  onEscalate
 }: RequestDetailsProps) {
   const [comment, setComment] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -116,6 +118,30 @@ export function RequestDetails({
     }
   };
 
+  const handleEscalate = async () => {
+    setIsUpdating(true);
+    
+    try {
+      if (onEscalate) {
+        await onEscalate(request.id);
+      }
+      
+      toast.success("Request has been escalated", {
+        description: "Notification emails will be sent to IT managers",
+      });
+      
+      setComment("");
+      onClose();
+    } catch (error: any) {
+      toast.error("Failed to escalate request", {
+        description: error.message || "Please try again",
+      });
+      console.error("Error escalating request:", error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
@@ -156,6 +182,10 @@ export function RequestDetails({
             <div>
               <p className="text-sm font-medium text-muted-foreground">Issue Type</p>
               <p className="capitalize">{issueType}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Tracking ID</p>
+              <p className="font-mono text-sm">{request.id}</p>
             </div>
           </div>
           
@@ -224,7 +254,7 @@ export function RequestDetails({
               {request.status !== "escalated" && (
                 <Button
                   variant="destructive"
-                  onClick={() => handleUpdateStatus("escalated")}
+                  onClick={handleEscalate}
                   disabled={isUpdating}
                 >
                   Escalate
