@@ -1,70 +1,85 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface AutoLogoutProps {
-  inactivityTime?: number; // In milliseconds
+interface UseAutoLogoutProps {
   isAuthenticated: boolean;
+  inactivityTime?: number; // in milliseconds
 }
 
-export function useAutoLogout({ inactivityTime = 3600000, isAuthenticated }: AutoLogoutProps) {
-  const navigate = useNavigate();
+export function useAutoLogout({ isAuthenticated, inactivityTime = 7200000 }: UseAutoLogoutProps) {
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
-  const [isChecking, setIsChecking] = useState<boolean>(false);
-
-  // Reset timer on user activity
-  const resetTimer = () => {
-    setLastActivity(Date.now());
-  };
-
-  // Register activity listeners
+  const [warningShown, setWarningShown] = useState<boolean>(false);
+  
+  // Update last activity timestamp on user interaction
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const activityEvents = [
-      'mousedown', 'mousemove', 'keypress', 
-      'scroll', 'touchstart', 'click', 'keydown'
-    ];
+    const updateActivity = () => {
+      setLastActivity(Date.now());
+      setWarningShown(false);
+    };
     
-    activityEvents.forEach(event => {
-      window.addEventListener(event, resetTimer);
-    });
+    // Update on various user interactions
+    window.addEventListener("mousemove", updateActivity);
+    window.addEventListener("keydown", updateActivity);
+    window.addEventListener("mousedown", updateActivity);
+    window.addEventListener("touchstart", updateActivity);
+    
+    // Initial activity timestamp
+    updateActivity();
     
     return () => {
-      activityEvents.forEach(event => {
-        window.removeEventListener(event, resetTimer);
-      });
+      window.removeEventListener("mousemove", updateActivity);
+      window.removeEventListener("keydown", updateActivity);
+      window.removeEventListener("mousedown", updateActivity);
+      window.removeEventListener("touchstart", updateActivity);
     };
   }, [isAuthenticated]);
-
+  
   // Check for inactivity
   useEffect(() => {
     if (!isAuthenticated) return;
     
+    const warningTime = inactivityTime - (5 * 60 * 1000); // 5 minutes before logout
+    
     const interval = setInterval(() => {
-      if (Date.now() - lastActivity > inactivityTime) {
-        setIsChecking(true);
+      const now = Date.now();
+      const inactive = now - lastActivity;
+      
+      // Show warning 5 minutes before logout
+      if (inactive >= warningTime && !warningShown) {
+        toast.warning("Session expiring soon", {
+          description: "You'll be logged out in 5 minutes due to inactivity.",
+          duration: 10000,
+        });
+        setWarningShown(true);
+      }
+      
+      // Log out after specified inactivity time
+      if (inactive >= inactivityTime) {
+        clearInterval(interval);
         handleLogout();
       }
     }, 60000); // Check every minute
     
     return () => clearInterval(interval);
-  }, [lastActivity, inactivityTime, isAuthenticated]);
-
-  // Handle logout
+  }, [isAuthenticated, lastActivity, inactivityTime, warningShown]);
+  
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      toast.info("You've been logged out due to inactivity");
-      navigate("/login");
+      toast.info("Logged out due to inactivity", {
+        description: "Please log in again to continue."
+      });
+      
+      // Redirect to login page
+      window.location.href = "/login";
     } catch (error) {
-      console.error("Error during auto-logout:", error);
-    } finally {
-      setIsChecking(false);
+      console.error("Error logging out:", error);
     }
   };
-
-  return { isChecking };
+  
+  return null;
 }

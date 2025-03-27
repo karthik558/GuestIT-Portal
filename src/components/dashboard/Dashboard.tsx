@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -165,13 +166,14 @@ export function Dashboard({ userProfile }: DashboardProps) {
       if (error) throw error;
 
       const formattedRequests = data.map(request => {
-        // Track if a request was ever escalated
-        const was_escalated = request.status === "escalated";
+        // Handle the was_escalated field which might not exist in all records
+        const wasEscalated = request.status === "escalated" || 
+                            (request.status === "completed" && request.was_escalated === true);
         
         return {
           ...request,
           created_at: new Date(request.created_at),
-          was_escalated
+          was_escalated: wasEscalated
         };
       });
 
@@ -410,9 +412,9 @@ export function Dashboard({ userProfile }: DashboardProps) {
       <Tabs defaultValue="requests" value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="space-y-4">
         <TabsList className="w-full grid grid-cols-2 md:grid-cols-4">
           <TabsTrigger value="requests">WiFi Requests</TabsTrigger>
-          <TabsTrigger value="users">User Management</TabsTrigger>
+          {userProfile?.role === 'admin' && <TabsTrigger value="users">User Management</TabsTrigger>}
           <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+          {userProfile?.role === 'admin' && <TabsTrigger value="settings">Settings</TabsTrigger>}
         </TabsList>
         
         <TabsContent value="requests" className="m-0 space-y-4">
@@ -471,9 +473,11 @@ export function Dashboard({ userProfile }: DashboardProps) {
           </Tabs>
         </TabsContent>
         
-        <TabsContent value="users" className="m-0 space-y-4">
-          <AdminUsers />
-        </TabsContent>
+        {userProfile?.role === 'admin' && (
+          <TabsContent value="users" className="m-0 space-y-4">
+            <AdminUsers />
+          </TabsContent>
+        )}
         
         <TabsContent value="reports" className="m-0 space-y-4">
           <Card>
@@ -489,16 +493,18 @@ export function Dashboard({ userProfile }: DashboardProps) {
           </Card>
         </TabsContent>
         
-        <TabsContent value="settings" className="m-0 space-y-4">
-          <EscalationSettings />
-        </TabsContent>
+        {userProfile?.role === 'admin' && (
+          <TabsContent value="settings" className="m-0 space-y-4">
+            <EscalationSettings />
+          </TabsContent>
+        )}
       </Tabs>
       
       <RequestDetails
         request={selectedRequest}
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
-        isAdmin={true}
+        isAdmin={userProfile?.role === 'admin'}
         onUpdateStatus={handleUpdateStatus}
         onEscalate={handleEscalateRequest}
       />

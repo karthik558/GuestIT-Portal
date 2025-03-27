@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Clock, CheckCircle, AlertTriangle, BarChart3, Clock8, BarChart } from "lucide-react";
@@ -29,6 +30,30 @@ const COLORS = {
   inProgress: '#b15db4', // Lighter Purple
   completed: '#7a3b7d',  // Darker Purple
   escalated: '#d17ad4',  // Light Purple
+};
+
+// Custom formatter for labels to prevent overlapping
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
+  // Only show labels for segments with more than 10% of the total
+  if (percent < 0.1) return null;
+  
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius * 1.1;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text 
+      x={x} 
+      y={y} 
+      textAnchor={x > cx ? 'start' : 'end'} 
+      dominantBaseline="central"
+      fill="#888888"
+      fontSize={12}
+    >
+      {`${name}: ${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
 };
 
 export function Stats({ stats }: StatsProps) {
@@ -119,10 +144,8 @@ export function Stats({ stats }: StatsProps) {
                     innerRadius={40}
                     paddingAngle={2}
                     dataKey="value"
-                    label={({ name, percent }) => 
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                    labelLine={{ stroke: 'none' }}
+                    labelLine={false}
+                    label={renderCustomizedLabel}
                   >
                     {pieData.map((entry, index) => (
                       <Cell 
@@ -136,12 +159,13 @@ export function Stats({ stats }: StatsProps) {
                     layout="horizontal" 
                     verticalAlign="bottom" 
                     align="center"
+                    wrapperStyle={{ paddingTop: 20 }}
                     formatter={(value, entry, index) => (
                       <span style={{ color: COLORS[value.toLowerCase().replace(' ', '') as keyof typeof COLORS] }}>{value}</span>
                     )}
                   />
                   <Tooltip 
-                    formatter={(value, name) => [value, name]} 
+                    formatter={(value, name) => [`${value} requests`, name]} 
                     contentStyle={{ 
                       backgroundColor: 'rgba(255, 255, 255, 0.95)',
                       borderRadius: '8px',
@@ -183,17 +207,20 @@ export function Stats({ stats }: StatsProps) {
                     axisLine={{ stroke: '#E5E7EB' }}
                   />
                   <Tooltip
+                    formatter={(value, name) => [`${value} requests`, name]}
                     contentStyle={{ 
                       backgroundColor: 'rgba(255, 255, 255, 0.95)',
                       borderRadius: '8px',
                       border: '1px solid #e2e8f0',
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
-                    formatter={(value, name) => [value, name]}
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: 10 }}
                   />
                   <Bar 
                     dataKey="value" 
-                    fill="#98489c"
+                    name="Number of Requests"
                     radius={[4, 4, 0, 0]}
                     barSize={40}
                   >

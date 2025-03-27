@@ -32,7 +32,7 @@ import { UserRole, AssignmentProps } from "@/types/user";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { UserPlus, Pencil, RefreshCw } from "lucide-react";
+import { UserPlus, Pencil, RefreshCw, Info } from "lucide-react";
 
 export function AdminUsers() {
   const [users, setUsers] = useState<AssignmentProps[]>([]);
@@ -41,6 +41,7 @@ export function AdminUsers() {
   const [editingUser, setEditingUser] = useState<AssignmentProps | null>(null);
   const [formData, setFormData] = useState({
     email: "",
+    password: "", // Added for new user creation
     name: "",
     role: "user" as UserRole,
     team: "",
@@ -124,6 +125,7 @@ export function AdminUsers() {
     setEditingUser(user);
     setFormData({
       email: user.email,
+      password: "", // Reset password field when editing
       name: user.name,
       role: user.role,
       team: user.team || '',
@@ -136,6 +138,7 @@ export function AdminUsers() {
     setEditingUser(null);
     setFormData({
       email: "",
+      password: "",
       name: "",
       role: "user",
       team: "",
@@ -163,13 +166,51 @@ export function AdminUsers() {
         toast.success("User updated successfully");
       } else {
         // Create new user
-        // Note: The user must be created through the auth signup process first
-        // This is a limitation of Supabase's RLS and auth system
-        toast.error("Direct user creation is not supported", {
-          description: "Users must sign up through the authentication flow first.",
+        if (!formData.email || !formData.password) {
+          toast.error("Email and password are required");
+          return;
+        }
+        
+        // First, create the user in Auth
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email: formData.email,
+          password: formData.password,
+          email_confirm: true, // Auto-confirm email
+          user_metadata: {
+            name: formData.name
+          }
         });
-        setIsDialogOpen(false);
-        return;
+        
+        if (authError) {
+          toast.error("Failed to create user account", {
+            description: authError.message
+          });
+          return;
+        }
+        
+        if (!authData.user) {
+          toast.error("Failed to create user - no user returned");
+          return;
+        }
+        
+        // Then update the profile with additional information
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            role: formData.role,
+            first_name: formData.name,
+            team: formData.team,
+            can_escalate: formData.can_escalate,
+          })
+          .eq('id', authData.user.id);
+        
+        if (profileError) {
+          toast.error("User created but profile update failed", {
+            description: profileError.message
+          });
+        } else {
+          toast.success("User created successfully");
+        }
       }
       
       setIsDialogOpen(false);
@@ -205,8 +246,6 @@ export function AdminUsers() {
           <Button 
             onClick={handleAddUser} 
             className="flex items-center"
-            disabled={true}
-            title="Direct user creation is not supported. Users must sign up through the authentication flow."
           >
             <UserPlus className="h-4 w-4 mr-2" />
             Add User
@@ -221,7 +260,7 @@ export function AdminUsers() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
         </div>
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -278,7 +317,7 @@ export function AdminUsers() {
       )}
       
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editingUser ? 'Edit User' : 'Add New User'}
@@ -286,83 +325,109 @@ export function AdminUsers() {
             <DialogDescription>
               {editingUser 
                 ? 'Update user details and permissions' 
-                : 'Direct user creation is not supported. Users must sign up through the authentication flow.'}
+                : 'Create a new user account with the specified permissions'}
             </DialogDescription>
           </DialogHeader>
           
-          {editingUser && (
-            <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                className="col-span-3"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                placeholder="Display Name"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="email"
+                className="col-span-3"
+                value={formData.email}
+                onChange={(e) => handleChange('email', e.target.value)}
+                placeholder="user@example.com"
+                disabled={editingUser !== null}
+              />
+            </div>
+            
+            {!editingUser && (
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Name
+                <Label htmlFor="password" className="text-right">
+                  Password
                 </Label>
                 <Input
-                  id="name"
+                  id="password"
+                  type="password"
                   className="col-span-3"
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  placeholder="Display Name"
+                  value={formData.password}
+                  onChange={(e) => handleChange('password', e.target.value)}
+                  placeholder="••••••••"
                 />
               </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="role" className="text-right">
-                  Role
-                </Label>
-                <Select 
-                  value={formData.role} 
-                  onValueChange={(value) => handleChange('role', value as UserRole)}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="user">User</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="team" className="text-right">
-                  Team
-                </Label>
-                <Input
-                  id="team"
-                  className="col-span-3"
-                  value={formData.team}
-                  onChange={(e) => handleChange('team', e.target.value)}
-                  placeholder="IT Support, Network, etc."
+            )}
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                Role
+              </Label>
+              <Select 
+                value={formData.role} 
+                onValueChange={(value) => handleChange('role', value as UserRole)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="team" className="text-right">
+                Team
+              </Label>
+              <Input
+                id="team"
+                className="col-span-3"
+                value={formData.team}
+                onChange={(e) => handleChange('team', e.target.value)}
+                placeholder="IT Support, Network, etc."
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="can-escalate" className="text-right">
+                Can Escalate
+              </Label>
+              <div className="flex items-center col-span-3">
+                <Switch
+                  id="can-escalate"
+                  checked={formData.can_escalate}
+                  onCheckedChange={(checked) => handleChange('can_escalate', checked)}
                 />
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="can-escalate" className="text-right">
-                  Can Escalate
-                </Label>
-                <div className="flex items-center col-span-3">
-                  <Switch
-                    id="can-escalate"
-                    checked={formData.can_escalate}
-                    onCheckedChange={(checked) => handleChange('can_escalate', checked)}
-                  />
-                  <span className="ml-2 text-sm text-muted-foreground">
-                    Allow user to receive escalation emails
-                  </span>
-                </div>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  Allow user to receive escalation emails
+                </span>
               </div>
             </div>
-          )}
+          </div>
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
-            {editingUser && (
-              <Button onClick={handleSubmit}>
-                Update
-              </Button>
-            )}
+            <Button onClick={handleSubmit}>
+              {editingUser ? 'Update' : 'Create User'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

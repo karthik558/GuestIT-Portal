@@ -17,12 +17,13 @@ export default function Admin() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  // Use auto-logout hook
-  useAutoLogout({ isAuthenticated, inactivityTime: 3600000 }); // 1 hour
+  // Use auto-logout hook with 2 hour timeout
+  useAutoLogout({ isAuthenticated, inactivityTime: 7200000 }); // 2 hours
   
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        setIsLoading(true);
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -76,10 +77,9 @@ export default function Admin() {
           
           setUserProfile(profile);
           
+          // Allow both admin and regular users to access dashboard, but show a notification for regular users
           if (role !== 'admin') {
-            toast.error("You don't have permission to access the admin dashboard");
-            navigate("/");
-            return;
+            toast.info("You're accessing the dashboard with limited permissions");
           }
           
           setIsLoading(false);
@@ -115,14 +115,16 @@ export default function Admin() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar isAdmin={true} />
+      <Navbar isAdmin={userRole === 'admin'} />
       
       <main className="flex-1 page-container pb-16 animate-fade-in">
         <div className="space-y-4 max-w-7xl mx-auto">
           <div>
-            <h1 className="heading-1">Admin Dashboard</h1>
+            <h1 className="heading-1">Dashboard</h1>
             <p className="subtitle">
-              Manage WiFi assistance requests and generate reports
+              {userRole === 'admin' 
+                ? "Manage WiFi assistance requests and generate reports" 
+                : "View and respond to WiFi assistance requests"}
             </p>
           </div>
           

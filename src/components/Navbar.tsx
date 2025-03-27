@@ -35,6 +35,17 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
     };
     
     checkAuth();
+    
+    // Set up auth state change listener to ensure login state is always current
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setIsLoggedIn(!!session);
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
   
   const handleLogout = async () => {
@@ -82,10 +93,18 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : isLoggedIn ? (
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center gap-2">
+              {pathname !== "/admin" && (
+                <Button variant="outline" size="sm" onClick={() => navigate("/admin")}>
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Dashboard
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           ) : pathname !== "/login" && (
             <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
               <LogIn className="h-4 w-4 mr-2" />
