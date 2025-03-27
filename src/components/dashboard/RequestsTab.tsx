@@ -57,26 +57,34 @@ export function RequestsTab({
   return (
     <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <TabsList className={`grid ${isMobile ? "grid-cols-3 gap-1" : "grid-cols-5"} w-full sm:w-auto`}>
-          <TabsTrigger value="all">Active</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="in-progress">In Progress</TabsTrigger>
-          {!isMobile && (
-            <>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-              <TabsTrigger value="escalated">Escalated</TabsTrigger>
-            </>
-          )}
-        </TabsList>
+        <div className="w-full sm:w-auto">
+          <TabsList className={`grid ${isMobile ? "grid-cols-3 gap-1" : "grid-cols-5"} w-full`}>
+            <TabsTrigger value="all">Active</TabsTrigger>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+            {!isMobile && (
+              <>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+                <TabsTrigger value="escalated">Escalated</TabsTrigger>
+              </>
+            )}
+          </TabsList>
+        </div>
         
         {isMobile && (
-          <TabsList className="grid grid-cols-2 gap-1 w-full">
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="escalated">Escalated</TabsTrigger>
-          </TabsList>
+          <div className="w-full">
+            <TabsList className="grid grid-cols-2 gap-1 w-full">
+              <TabsTrigger value="completed">Completed</TabsTrigger>
+              <TabsTrigger value="escalated">Escalated</TabsTrigger>
+            </TabsList>
+          </div>
         )}
         
-        <Button variant="outline" onClick={fetchRequests} className="w-full sm:w-auto">
+        <Button 
+          variant="outline" 
+          onClick={fetchRequests} 
+          className="w-full sm:w-auto mt-2 sm:mt-0"
+        >
           Refresh
         </Button>
       </div>

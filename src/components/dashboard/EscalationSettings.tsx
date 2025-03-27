@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,7 +151,7 @@ export function EscalationSettings() {
           </div>
         ) : (
           <>
-            <div className="flex items-end gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex-1 space-y-1">
                 <Label htmlFor="new-email">Add Email Address</Label>
                 <Input
@@ -167,10 +168,12 @@ export function EscalationSettings() {
                   }}
                 />
               </div>
-              <Button onClick={handleAddEmail}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
+              <div className="flex sm:items-end pt-2 sm:pt-0">
+                <Button onClick={handleAddEmail} className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+              </div>
             </div>
             
             <div>
@@ -208,32 +211,38 @@ export function EscalationSettings() {
                   <li>Escalate requests that remain <strong>pending</strong> for more than <strong>20 minutes</strong></li>
                   <li>Escalate requests that remain <strong>in progress</strong> for more than <strong>45 minutes</strong></li>
                 </ul>
-                <p>Escalated requests will trigger email notifications to all configured addresses above.</p>
+                <p className="mt-2">Escalated requests will trigger email notifications to all configured addresses above.</p>
               </div>
-              <Button 
-                variant="outline" 
-                className="mt-3" 
-                onClick={setupEscalationCron}
-                disabled={isSettingUpCron || isCronSetup}
-              >
-                {isSettingUpCron ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2"></div>
-                    Setting Up...
-                  </>
-                ) : isCronSetup ? (
-                  "Escalation Schedule Configured"
-                ) : (
-                  "Setup Automatic Escalation"
-                )}
-              </Button>
+              <div className="mt-3 flex justify-center sm:justify-start">
+                <Button 
+                  variant="outline" 
+                  onClick={setupEscalationCron}
+                  disabled={isSettingUpCron || isCronSetup}
+                  className="w-full sm:w-auto"
+                >
+                  {isSettingUpCron ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2"></div>
+                      Setting Up...
+                    </>
+                  ) : isCronSetup ? (
+                    "Escalation Schedule Configured"
+                  ) : (
+                    "Setup Automatic Escalation"
+                  )}
+                </Button>
+              </div>
             </div>
           </>
         )}
       </CardContent>
       
-      <CardFooter>
-        <Button onClick={handleSaveSettings} disabled={isSaving || isLoading} className="w-full">
+      <CardFooter className="flex-col sm:flex-row gap-2">
+        <Button 
+          onClick={handleSaveSettings} 
+          disabled={isSaving || isLoading} 
+          className="w-full"
+        >
           {isSaving ? (
             <>
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></div>

@@ -24,7 +24,7 @@ interface StatsProps {
   };
 }
 
-// Updated color scheme to match the website theme
+// Updated consistent color scheme to match the website theme
 const COLORS = {
   pending: '#98489c',    // Primary Purple
   inProgress: '#b15db4', // Lighter Purple
@@ -58,17 +58,17 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 
 export function Stats({ stats }: StatsProps) {
   const pieData = [
-    { name: 'Pending', value: stats.pending },
-    { name: 'In Progress', value: stats.inProgress },
-    { name: 'Completed', value: stats.completed },
-    { name: 'Escalated', value: stats.escalated },
+    { name: 'Pending', value: stats.pending, color: COLORS.pending },
+    { name: 'In Progress', value: stats.inProgress, color: COLORS.inProgress },
+    { name: 'Completed', value: stats.completed, color: COLORS.completed },
+    { name: 'Escalated', value: stats.escalated, color: COLORS.escalated },
   ].filter(item => item.value > 0);
 
   const barData = [
-    { name: 'Pending', value: stats.pending },
-    { name: 'In Progress', value: stats.inProgress },
-    { name: 'Completed', value: stats.completed },
-    { name: 'Escalated', value: stats.escalated },
+    { name: 'Pending', value: stats.pending, color: COLORS.pending },
+    { name: 'In Progress', value: stats.inProgress, color: COLORS.inProgress },
+    { name: 'Completed', value: stats.completed, color: COLORS.completed },
+    { name: 'Escalated', value: stats.escalated, color: COLORS.escalated },
   ];
 
   return (
@@ -150,7 +150,7 @@ export function Stats({ stats }: StatsProps) {
                     {pieData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={COLORS[entry.name.toLowerCase().replace(' ', '') as keyof typeof COLORS]}
+                        fill={entry.color}
                         stroke="none"
                       />
                     ))}
@@ -160,9 +160,10 @@ export function Stats({ stats }: StatsProps) {
                     verticalAlign="bottom" 
                     align="center"
                     wrapperStyle={{ paddingTop: 20 }}
-                    formatter={(value, entry, index) => (
-                      <span style={{ color: COLORS[value.toLowerCase().replace(' ', '') as keyof typeof COLORS] }}>{value}</span>
-                    )}
+                    formatter={(value, entry, index) => {
+                      const item = pieData.find(d => d.name === value);
+                      return <span style={{ color: item?.color }}>{value}</span>;
+                    }}
                   />
                   <Tooltip 
                     formatter={(value, name) => [`${value} requests`, name]} 
@@ -207,7 +208,8 @@ export function Stats({ stats }: StatsProps) {
                     axisLine={{ stroke: '#E5E7EB' }}
                   />
                   <Tooltip
-                    formatter={(value, name) => [`${value} requests`, name]}
+                    formatter={(value, name) => [`${value} requests`, "Number of Requests"]}
+                    labelFormatter={(label) => label}
                     contentStyle={{ 
                       backgroundColor: 'rgba(255, 255, 255, 0.95)',
                       borderRadius: '8px',
@@ -217,6 +219,13 @@ export function Stats({ stats }: StatsProps) {
                   />
                   <Legend 
                     wrapperStyle={{ paddingTop: 10 }}
+                    payload={[
+                      {
+                        value: 'Number of Requests',
+                        type: 'square',
+                        color: '#98489c',
+                      }
+                    ]}
                   />
                   <Bar 
                     dataKey="value" 
@@ -227,7 +236,7 @@ export function Stats({ stats }: StatsProps) {
                     {barData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`}
-                        fill={COLORS[entry.name.toLowerCase().replace(' ', '') as keyof typeof COLORS]}
+                        fill={entry.color}
                       />
                     ))}
                   </Bar>
