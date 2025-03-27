@@ -1,22 +1,18 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RequestsTab } from "./RequestsTab";
 import { ReportGenerator } from "./ReportGenerator";
 import { AdminUsers } from "./AdminUsers";
 import { EscalationSettings } from "./EscalationSettings";
 import { Stats } from "./Stats";
-import { WifiRequestCard } from "../WifiRequestCard";
-import { RequestDetails } from "../RequestDetails";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { EscalationSettings as EscalationSettingsType } from "@/types/escalation";
-import { useNotifications } from "@/hooks/use-notifications";
 import { DatePickerWithRange } from "../ui/date-range-picker";
 import { DateRange } from "react-day-picker";
-import { format, subDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { UserProfile } from "@/types/user";
-import { WifiRequest, RequestStatus } from "@/types/wifi-request";
+import { useWifiRequests } from "@/hooks/use-wifi-requests";
+import { useNotifications } from "@/hooks/use-notifications";
+import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DashboardProps {
@@ -24,30 +20,27 @@ interface DashboardProps {
 }
 
 export function Dashboard({ userProfile }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState("all");
   const [activeDashboardTab, setActiveDashboardTab] = useState("requests");
-  const [requests, setRequests] = useState<WifiRequest[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<WifiRequest[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<WifiRequest | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    inProgress: 0,
-    completed: 0,
-    escalated: 0,
-    avgResponseTime: "N/A",
-    avgResolutionTime: "N/A",
-  });
-  
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date())
-  });
-  
   const { permission, requestPermission, showNotification } = useNotifications();
   const isMobile = useIsMobile();
+  
+  const {
+    filteredRequests,
+    selectedRequest,
+    isDetailsOpen,
+    isLoading,
+    activeTab,
+    stats,
+    date,
+    setDate,
+    setActiveTab,
+    fetchRequests,
+    handleViewDetails,
+    handleUpdateStatus,
+    handleEscalateRequest,
+    handleManualCheckEscalation,
+    setIsDetailsOpen
+  } = useWifiRequests();
 
   useEffect(() => {
     fetchRequests();
@@ -80,293 +73,8 @@ export function Dashboard({ userProfile }: DashboardProps) {
     };
   }, [permission]);
 
-  useEffect(() => {
-    if (!requests.length) return;
-    
-    filterRequests();
-  }, [requests, activeTab, date]);
-
-  const isDateInRange = (dateToCheck: Date): boolean => {
-    if (!date || !date.from) return true;
-    
-    try {
-      if (date.from && !date.to) {
-        return dateToCheck >= date.from;
-      }
-      
-      return isWithinInterval(dateToCheck, {
-        start: date.from,
-        end: date.to || date.from
-      });
-    } catch (error) {
-      console.error("Error checking date range:", error);
-      return false;
-    }
-  };
-
-  const filterRequests = () => {
-    let filtered = [...requests];
-    
-    if (date && date.from) {
-      filtered = filtered.filter(request => {
-        const requestDate = new Date(request.created_at);
-        return isDateInRange(requestDate);
-      });
-    }
-    
-    if (activeTab !== "all") {
-      if (activeTab === "escalated") {
-        filtered = filtered.filter(request => 
-          request.status === "escalated" || (request.status === "completed" && request.was_escalated)
-        );
-      } else if (activeTab === "completed") {
-        filtered = filtered.filter(request => request.status === "completed");
-      } else if (activeTab === "pending") {
-        filtered = filtered.filter(request => request.status === "pending");
-      } else if (activeTab === "in-progress") {
-        filtered = filtered.filter(request => request.status === "in-progress");
-      }
-    } else {
-      filtered = filtered.filter(r => 
-        r.status !== "completed" || (r.status === "completed" && r.was_escalated)
-      );
-    }
-    
-    setFilteredRequests(filtered);
-  };
-
-  const fetchRequests = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('wifi_requests')
-        .select('*');
-      
-      if (error) throw error;
-
-      const formattedRequests = data.map(request => {
-        const wasEscalated = request.status === "escalated" || 
-                           (request.status === "completed" && (request as any).was_escalated === true);
-        
-        return {
-          ...request,
-          created_at: new Date(request.created_at),
-          was_escalated: wasEscalated
-        } as WifiRequest;
-      });
-
-      setRequests(formattedRequests);
-      
-      calculateStats(formattedRequests);
-    } catch (error: any) {
-      console.error("Error fetching requests:", error);
-      toast.error("Failed to load requests", {
-        description: error.message || "Please try again later",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const calculateStats = (allRequests: WifiRequest[]) => {
-    let filteredByDate = [...allRequests].filter(request => 
-      isDateInRange(new Date(request.created_at))
-    );
-    
-    const statData = {
-      total: filteredByDate.length,
-      pending: filteredByDate.filter(r => r.status === "pending").length,
-      inProgress: filteredByDate.filter(r => r.status === "in-progress").length,
-      completed: filteredByDate.filter(r => r.status === "completed").length,
-      escalated: filteredByDate.filter(r => r.status === "escalated" || (r.status === "completed" && r.was_escalated)).length,
-      avgResponseTime: filteredByDate.length > 0 ? "18 minutes" : "N/A",
-      avgResolutionTime: filteredByDate.length > 0 ? "45 minutes" : "N/A",
-    };
-    
-    setStats(statData);
-  };
-
-  const handleViewDetails = async (request: WifiRequest) => {
-    try {
-      const { data: comments, error } = await supabase
-        .from('request_comments')
-        .select('*')
-        .eq('request_id', request.id);
-      
-      if (!error && comments.length > 0) {
-        const formattedComments = comments.map(comment => ({
-          text: comment.comment_text,
-          timestamp: new Date(comment.created_at),
-          user: comment.user_name,
-        }));
-        
-        request.comments = formattedComments;
-      }
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-    }
-    
-    setSelectedRequest(request);
-    setIsDetailsOpen(true);
-  };
-
-  const handleUpdateStatus = async (id: string, status: RequestStatus, comment?: string) => {
-    try {
-      const requestToUpdate = requests.find(r => r.id === id);
-      const was_escalated = requestToUpdate?.status === "escalated" || requestToUpdate?.was_escalated;
-      
-      const updateData: any = { status };
-      if (was_escalated) {
-        updateData.was_escalated = true;
-      }
-      
-      const { error: updateError } = await supabase
-        .from('wifi_requests')
-        .update(updateData)
-        .eq('id', id);
-      
-      if (updateError) throw updateError;
-      
-      if (comment) {
-        const { error: commentError } = await supabase
-          .from('request_comments')
-          .insert([{
-            request_id: id,
-            user_name: userProfile?.first_name || "IT Staff",
-            comment_text: comment,
-          }]);
-        
-        if (commentError) throw commentError;
-      }
-      
-      setRequests(prev => 
-        prev.map(request => {
-          if (request.id === id) {
-            const updatedRequest = { 
-              ...request, 
-              status,
-              was_escalated: was_escalated
-            };
-            
-            if (comment) {
-              const comments = updatedRequest.comments || [];
-              updatedRequest.comments = [
-                ...comments,
-                {
-                  text: comment,
-                  timestamp: new Date(),
-                  user: userProfile?.first_name || "IT Staff",
-                },
-              ];
-            }
-            
-            return updatedRequest;
-          }
-          return request;
-        })
-      );
-      
-      fetchRequests();
-    } catch (error: any) {
-      console.error("Error updating request:", error);
-      toast.error("Failed to update request", {
-        description: error.message || "Please try again later",
-      });
-    }
-  };
-
-  const handleEscalateRequest = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('wifi_requests')
-        .update({ 
-          status: 'escalated',
-          was_escalated: true
-        })
-        .eq('id', id);
-      
-      if (error) {
-        toast.error("Failed to escalate request");
-        console.error("Error escalating request:", error);
-        return;
-      }
-      
-      setRequests(prev => 
-        prev.map(req => 
-          req.id === id ? { ...req, status: 'escalated', was_escalated: true } : req
-        )
-      );
-      
-      try {
-        const { data: settings, error: settingsError } = await supabase
-          .from('escalation_settings')
-          .select('*')
-          .single();
-        
-        if (!settingsError && settings && settings.emails) {
-          const emailList = Array.isArray(settings.emails) 
-            ? settings.emails.map(email => String(email))
-            : [];
-            
-          const request = requests.find(r => r.id === id);
-          
-          if (request && emailList.length > 0) {
-            toast.success("Escalation emails will be sent", {
-              description: `Notification sent to ${emailList.length} recipients`,
-            });
-          }
-        }
-      } catch (notifyError) {
-        console.error("Error sending escalation notifications:", notifyError);
-      }
-      
-      toast.success("Request escalated successfully");
-      fetchRequests();
-    } catch (error) {
-      console.error("Error in escalation process:", error);
-      toast.error("An error occurred during escalation");
-    }
-  };
-
   const onDateRangeChange = (range: DateRange | undefined) => {
     setDate(range);
-    if (requests.length > 0) {
-      calculateStats(requests);
-    }
-  };
-
-  const handleManualCheckEscalation = async () => {
-    try {
-      setIsLoading(true);
-      toast.info("Checking for requests to escalate...");
-      
-      const { data, error } = await supabase.functions.invoke('escalate-requests');
-      
-      if (error) {
-        throw error;
-      }
-      
-      console.log("Escalation check response:", data);
-      
-      if (data.success) {
-        if (data.message.includes("Escalated")) {
-          toast.success(data.message);
-        } else {
-          toast.info(data.message);
-        }
-      } else {
-        toast.error("Failed to check escalations");
-      }
-      
-      fetchRequests();
-    } catch (error: any) {
-      console.error("Error checking escalations:", error);
-      toast.error("Failed to check escalations", {
-        description: error.message || "An unexpected error occurred"
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -398,65 +106,21 @@ export function Dashboard({ userProfile }: DashboardProps) {
         </TabsList>
         
         <TabsContent value="requests" className="m-0 space-y-4">
-          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <TabsList className={`grid ${isMobile ? "grid-cols-3 gap-1" : "grid-cols-5"} w-full sm:w-auto`}>
-                <TabsTrigger value="all">Active</TabsTrigger>
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="in-progress">In Progress</TabsTrigger>
-                {!isMobile && (
-                  <>
-                    <TabsTrigger value="completed">Completed</TabsTrigger>
-                    <TabsTrigger value="escalated">Escalated</TabsTrigger>
-                  </>
-                )}
-              </TabsList>
-              
-              {isMobile && (
-                <TabsList className="grid grid-cols-2 gap-1 w-full">
-                  <TabsTrigger value="completed">Completed</TabsTrigger>
-                  <TabsTrigger value="escalated">Escalated</TabsTrigger>
-                </TabsList>
-              )}
-              
-              <Button variant="outline" onClick={fetchRequests} className="w-full sm:w-auto">
-                Refresh
-              </Button>
-            </div>
-            
-            <TabsContent value={activeTab} className="m-0">
-              {isLoading ? (
-                <Card>
-                  <CardContent className="py-10">
-                    <div className="text-center space-y-2">
-                      <p className="text-lg font-medium">Loading requests...</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : filteredRequests.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredRequests.map((request) => (
-                    <WifiRequestCard
-                      key={request.id}
-                      request={request}
-                      onClick={() => handleViewDetails(request)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="py-10">
-                    <div className="text-center space-y-2">
-                      <p className="text-lg font-medium">No requests found</p>
-                      <p className="text-muted-foreground">
-                        There are no WiFi assistance requests with this status in the selected date range.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-          </Tabs>
+          <RequestsTab 
+            stats={stats}
+            userProfile={userProfile}
+            isLoading={isLoading}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            filteredRequests={filteredRequests}
+            selectedRequest={selectedRequest}
+            isDetailsOpen={isDetailsOpen}
+            fetchRequests={fetchRequests}
+            handleViewDetails={handleViewDetails}
+            handleUpdateStatus={handleUpdateStatus}
+            handleEscalateRequest={handleEscalateRequest}
+            setIsDetailsOpen={setIsDetailsOpen}
+          />
         </TabsContent>
         
         {userProfile?.role === 'admin' && (
@@ -466,17 +130,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
         )}
         
         <TabsContent value="reports" className="m-0 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Generate Reports</CardTitle>
-              <CardDescription>
-                Create detailed reports based on WiFi assistance requests
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ReportGenerator />
-            </CardContent>
-          </Card>
+          <ReportGenerator />
         </TabsContent>
         
         {userProfile?.role === 'admin' && (
@@ -485,15 +139,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
           </TabsContent>
         )}
       </Tabs>
-      
-      <RequestDetails
-        request={selectedRequest}
-        isOpen={isDetailsOpen}
-        onClose={() => setIsDetailsOpen(false)}
-        isAdmin={userProfile?.role === 'admin'}
-        onUpdateStatus={handleUpdateStatus}
-        onEscalate={handleEscalateRequest}
-      />
     </div>
   );
 }
