@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CustomModeToggle } from "@/components/ui/custom-mode-toggle";
@@ -27,6 +27,8 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const navbarRef = useRef<HTMLElement>(null);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -43,8 +45,17 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
       }
     );
     
+    // Add scroll listener to handle navbar compacting
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 10);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    
     return () => {
       subscription.unsubscribe();
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
   
@@ -60,12 +71,19 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
   };
   
   return (
-    <header className="border-b bg-background sticky top-0 z-50">
-      <div className="container flex h-16 items-center justify-between py-4">
+    <header 
+      ref={navbarRef}
+      className={`border-b bg-background/95 backdrop-blur-sm sticky top-0 z-50 transition-all duration-200 ${
+        isScrolled ? "h-14 shadow-sm" : "h-16"
+      }`}
+    >
+      <div className={`container flex items-center justify-between h-full py-2 transition-all duration-200`}>
         <div className="flex items-center gap-2 md:gap-4">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/favicon.png" alt="Logo" className="h-8 w-8" />
-            <span className="text-xl font-bold hidden sm:inline-block">WiFi Support</span>
+            <img src="/favicon.png" alt="Logo" className={`transition-all duration-200 ${isScrolled ? "h-7 w-7" : "h-8 w-8"}`} />
+            <span className={`font-bold hidden sm:inline-block transition-all duration-200 ${isScrolled ? "text-lg" : "text-xl"}`}>
+              WiFi Support
+            </span>
           </Link>
         </div>
         

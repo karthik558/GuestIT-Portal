@@ -94,14 +94,14 @@ export function Dashboard({ userProfile }: DashboardProps) {
       </div>
       
       <Tabs defaultValue="requests" value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="space-y-4">
-        <TabsList className={`w-full ${isMobile ? "grid-cols-2 gap-2 flex-wrap" : ""}`}>
-          <TabsTrigger value="requests" className="min-w-[100px]">WiFi Requests</TabsTrigger>
+        <TabsList className={`w-full ${isMobile ? "grid grid-cols-2 md:grid-cols-4 gap-1" : ""}`}>
+          <TabsTrigger value="requests" className="min-w-0 px-2 flex-1">WiFi Requests</TabsTrigger>
           {userProfile?.role === 'admin' && (
-            <TabsTrigger value="users" className="min-w-[100px]">User Management</TabsTrigger>
+            <TabsTrigger value="users" className="min-w-0 px-2 flex-1">User Management</TabsTrigger>
           )}
-          <TabsTrigger value="reports" className="min-w-[100px]">Reports</TabsTrigger>
+          <TabsTrigger value="reports" className="min-w-0 px-2 flex-1">Reports</TabsTrigger>
           {userProfile?.role === 'admin' && (
-            <TabsTrigger value="settings" className="min-w-[100px]">Settings</TabsTrigger>
+            <TabsTrigger value="settings" className="min-w-0 px-2 flex-1">Settings</TabsTrigger>
           )}
         </TabsList>
         
