@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +16,7 @@ import { DatePickerWithRange } from "../ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { format, subDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { UserProfile } from "@/types/user";
+import { WifiRequest, RequestStatus } from "@/types/wifi-request";
 
 type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
 
@@ -104,13 +104,10 @@ export function Dashboard({ userProfile }: DashboardProps) {
     if (!date || !date.from) return true;
     
     try {
-      // Handle edge case where date.to might be undefined
       if (date.from && !date.to) {
-        // If only from date is provided, check if target date is on or after from date
         return dateToCheck >= date.from;
       }
       
-      // Normal case with from and to dates
       return isWithinInterval(dateToCheck, {
         start: date.from,
         end: date.to || date.from
@@ -124,7 +121,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
   const filterRequests = () => {
     let filtered = [...requests];
     
-    // Apply date filter
     if (date && date.from) {
       filtered = filtered.filter(request => {
         const requestDate = new Date(request.created_at);
@@ -132,10 +128,8 @@ export function Dashboard({ userProfile }: DashboardProps) {
       });
     }
     
-    // Apply status filter
     if (activeTab !== "all") {
       if (activeTab === "escalated") {
-        // Include both currently escalated and completed tasks that were once escalated
         filtered = filtered.filter(request => 
           request.status === "escalated" || (request.status === "completed" && request.was_escalated)
         );
@@ -147,7 +141,6 @@ export function Dashboard({ userProfile }: DashboardProps) {
         filtered = filtered.filter(request => request.status === "in-progress");
       }
     } else {
-      // For "all" tab, show everything except completed and non-escalated
       filtered = filtered.filter(r => 
         r.status !== "completed" || (r.status === "completed" && r.was_escalated)
       );
@@ -166,9 +159,8 @@ export function Dashboard({ userProfile }: DashboardProps) {
       if (error) throw error;
 
       const formattedRequests = data.map(request => {
-        // Handle the was_escalated field which might not exist in all records
         const wasEscalated = request.status === "escalated" || 
-                            (request.status === "completed" && request.was_escalated === true);
+                           (request.status === "completed" && (request as any).was_escalated === true);
         
         return {
           ...request,
@@ -234,11 +226,9 @@ export function Dashboard({ userProfile }: DashboardProps) {
 
   const handleUpdateStatus = async (id: string, status: RequestStatus, comment?: string) => {
     try {
-      // Check if request was escalated before marking it complete
       const requestToUpdate = requests.find(r => r.id === id);
       const was_escalated = requestToUpdate?.status === "escalated" || requestToUpdate?.was_escalated;
       
-      // Update with was_escalated flag if needed
       const updateData: any = { status };
       if (was_escalated) {
         updateData.was_escalated = true;

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Dialog, 
@@ -15,27 +14,26 @@ import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { RequestStatus, WifiRequest } from "@/types/wifi-request";
 
 type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
 
-interface WifiRequest {
-  id: string;
-  name: string;
-  email: string;
-  room_number?: string;
-  roomNumber?: string;
-  device_type?: string;
-  deviceType?: string;
-  issue_type?: string;
-  issueType?: string;
-  description: string;
-  status: RequestStatus;
-  created_at: Date;
-  comments?: { text: string; timestamp: Date; user: string }[];
-}
-
 interface RequestDetailsProps {
-  request: WifiRequest | null;
+  request: (WifiRequest | {
+    id: string;
+    name: string;
+    email: string;
+    room_number?: string;
+    roomNumber?: string;
+    device_type?: string;
+    deviceType?: string;
+    issue_type?: string;
+    issueType?: string;
+    description: string;
+    status: RequestStatus;
+    created_at: Date;
+    comments?: { text: string; timestamp: Date; user: string }[];
+  }) | null;
   isOpen: boolean;
   onClose: () => void;
   isAdmin?: boolean;
@@ -56,7 +54,6 @@ export function RequestDetails({
 
   if (!request) return null;
   
-  // Handle both property naming conventions (Supabase uses snake_case, frontend uses camelCase)
   const roomNumber = request.room_number || request.roomNumber || "";
   const deviceType = request.device_type || request.deviceType || "";
   const issueType = request.issue_type || request.issueType || "";

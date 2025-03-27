@@ -1,27 +1,23 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
-
-type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
-
-interface WifiRequest {
-  id: string;
-  name: string;
-  room_number?: string;
-  roomNumber?: string;
-  device_type?: string;
-  deviceType?: string;
-  issue_type?: string;
-  issueType?: string;
-  status: RequestStatus;
-  created_at: Date;
-  was_escalated?: boolean;
-}
+import { WifiRequest, RequestStatus } from "@/types/wifi-request";
 
 interface WifiRequestCardProps {
-  request: WifiRequest;
+  request: WifiRequest | {
+    id: string;
+    name: string;
+    room_number?: string;
+    roomNumber?: string;
+    device_type?: string;
+    deviceType?: string;
+    issue_type?: string;
+    issueType?: string;
+    status: RequestStatus;
+    created_at: Date;
+    was_escalated?: boolean;
+  };
   onClick?: () => void;
 }
 

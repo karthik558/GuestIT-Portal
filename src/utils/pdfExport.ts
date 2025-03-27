@@ -1,22 +1,7 @@
-
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
-type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
-
-interface WifiRequest {
-  id: string;
-  name: string;
-  email: string;
-  room_number: string;
-  device_type: string;
-  issue_type: string;
-  description: string;
-  status: RequestStatus;
-  created_at: Date;
-  was_escalated?: boolean;
-}
+import { WifiRequest, RequestStatus } from "@/types/wifi-request";
 
 export const generatePDF = async (requests: WifiRequest[], reportType: string, dateRange: { from?: Date, to?: Date }) => {
   try {

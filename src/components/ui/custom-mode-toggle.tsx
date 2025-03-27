@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useContext } from "react";
-import { ThemeContext } from "@/App";
+import { ThemeContext } from "@/components/ui/theme-provider";
 import { Moon, Sun } from "lucide-react";
 
 export function CustomModeToggle() {
