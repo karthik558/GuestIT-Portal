@@ -16,7 +16,8 @@ import { DatePickerWithRange } from "../ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { format, subDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { UserProfile } from "@/types/user";
-import { WifiRequest as WifiRequestType, RequestStatus as RequestStatusType } from "@/types/wifi-request";
+import { WifiRequest, RequestStatus } from "@/types/wifi-request";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DashboardProps {
   userProfile: UserProfile | null;
@@ -25,9 +26,9 @@ interface DashboardProps {
 export function Dashboard({ userProfile }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("all");
   const [activeDashboardTab, setActiveDashboardTab] = useState("requests");
-  const [requests, setRequests] = useState<WifiRequestType[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<WifiRequestType[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<WifiRequestType | null>(null);
+  const [requests, setRequests] = useState<WifiRequest[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<WifiRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<WifiRequest | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -46,6 +47,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
   });
   
   const { permission, requestPermission, showNotification } = useNotifications();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchRequests();
@@ -150,7 +152,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
           ...request,
           created_at: new Date(request.created_at),
           was_escalated: wasEscalated
-        } as WifiRequestType;
+        } as WifiRequest;
       });
 
       setRequests(formattedRequests);
@@ -166,7 +168,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
     }
   };
 
-  const calculateStats = (allRequests: WifiRequestType[]) => {
+  const calculateStats = (allRequests: WifiRequest[]) => {
     let filteredByDate = [...allRequests].filter(request => 
       isDateInRange(new Date(request.created_at))
     );
@@ -184,7 +186,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
     setStats(statData);
   };
 
-  const handleViewDetails = async (request: WifiRequestType) => {
+  const handleViewDetails = async (request: WifiRequest) => {
     try {
       const { data: comments, error } = await supabase
         .from('request_comments')
@@ -208,7 +210,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
     setIsDetailsOpen(true);
   };
 
-  const handleUpdateStatus = async (id: string, status: RequestStatusType, comment?: string) => {
+  const handleUpdateStatus = async (id: string, status: RequestStatus, comment?: string) => {
     try {
       const requestToUpdate = requests.find(r => r.id === id);
       const was_escalated = requestToUpdate?.status === "escalated" || requestToUpdate?.was_escalated;
@@ -384,25 +386,40 @@ export function Dashboard({ userProfile }: DashboardProps) {
       </div>
       
       <Tabs defaultValue="requests" value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="space-y-4">
-        <TabsList className="w-full grid grid-cols-2 md:grid-cols-4">
-          <TabsTrigger value="requests">WiFi Requests</TabsTrigger>
-          {userProfile?.role === 'admin' && <TabsTrigger value="users">User Management</TabsTrigger>}
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          {userProfile?.role === 'admin' && <TabsTrigger value="settings">Settings</TabsTrigger>}
+        <TabsList className={`w-full ${isMobile ? "grid-cols-2 gap-2 flex-wrap" : ""}`}>
+          <TabsTrigger value="requests" className="min-w-[100px]">WiFi Requests</TabsTrigger>
+          {userProfile?.role === 'admin' && (
+            <TabsTrigger value="users" className="min-w-[100px]">User Management</TabsTrigger>
+          )}
+          <TabsTrigger value="reports" className="min-w-[100px]">Reports</TabsTrigger>
+          {userProfile?.role === 'admin' && (
+            <TabsTrigger value="settings" className="min-w-[100px]">Settings</TabsTrigger>
+          )}
         </TabsList>
         
         <TabsContent value="requests" className="m-0 space-y-4">
           <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <TabsList className="grid grid-cols-3 md:grid-cols-5">
+              <TabsList className={`grid ${isMobile ? "grid-cols-3 gap-1" : "grid-cols-5"} w-full sm:w-auto`}>
                 <TabsTrigger value="all">Active</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
                 <TabsTrigger value="in-progress">In Progress</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="escalated">Escalated</TabsTrigger>
+                {!isMobile && (
+                  <>
+                    <TabsTrigger value="completed">Completed</TabsTrigger>
+                    <TabsTrigger value="escalated">Escalated</TabsTrigger>
+                  </>
+                )}
               </TabsList>
               
-              <Button variant="outline" onClick={fetchRequests}>
+              {isMobile && (
+                <TabsList className="grid grid-cols-2 gap-1 w-full">
+                  <TabsTrigger value="completed">Completed</TabsTrigger>
+                  <TabsTrigger value="escalated">Escalated</TabsTrigger>
+                </TabsList>
+              )}
+              
+              <Button variant="outline" onClick={fetchRequests} className="w-full sm:w-auto">
                 Refresh
               </Button>
             </div>
@@ -421,12 +438,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
                   {filteredRequests.map((request) => (
                     <WifiRequestCard
                       key={request.id}
-                      request={{
-                        ...request,
-                        roomNumber: request.room_number,
-                        deviceType: request.device_type,
-                        issueType: request.issue_type,
-                      }}
+                      request={request}
                       onClick={() => handleViewDetails(request)}
                     />
                   ))}

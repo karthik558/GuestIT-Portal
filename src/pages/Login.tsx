@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,11 +8,13 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { UserRole } from "@/types/user";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -26,7 +27,6 @@ export default function Login() {
         const { data } = await supabase.auth.getSession();
         
         if (data.session) {
-          // Get the user's profile to check their role
           try {
             const { data: profileData, error: profileError } = await supabase
               .from('profiles')
@@ -36,14 +36,12 @@ export default function Login() {
             
             if (profileError) {
               console.error("Error fetching profile:", profileError);
-              // Log out the user if there's an error fetching the profile
               await supabase.auth.signOut();
               toast.error("Error fetching profile");
               setIsCheckingAuth(false);
               return;
             }
             
-            // Redirect based on role
             if (profileData.role === 'admin') {
               navigate("/admin");
             } else {
@@ -66,6 +64,10 @@ export default function Login() {
     checkAuth();
   }, [navigate]);
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -76,7 +78,6 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      // Simple validation
       if (!formData.email || !formData.password) {
         toast.error("Please fill in all fields");
         setIsLoading(false);
@@ -85,7 +86,6 @@ export default function Login() {
       
       console.log("Attempting login with:", formData.email);
       
-      // Use Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
@@ -93,7 +93,6 @@ export default function Login() {
       
       if (error) throw error;
       
-      // Get user profile from profiles table
       try {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -178,16 +177,30 @@ export default function Login() {
               
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="border-primary/20 focus-visible:ring-primary"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="border-primary/20 focus-visible:ring-primary pr-10"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={togglePasswordVisibility}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
               </div>
               
               <div className="flex items-center justify-between">
