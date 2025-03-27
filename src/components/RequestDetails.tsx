@@ -14,9 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { RequestStatus, WifiRequest } from "@/types/wifi-request";
-
-type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
+import { WifiRequest, RequestStatus } from "@/types/wifi-request";
 
 interface RequestDetailsProps {
   request: (WifiRequest | {
@@ -54,9 +52,9 @@ export function RequestDetails({
 
   if (!request) return null;
   
-  const roomNumber = request.room_number || request.roomNumber || "";
-  const deviceType = request.device_type || request.deviceType || "";
-  const issueType = request.issue_type || request.issueType || "";
+  const roomNumber = request.room_number || (request as any).roomNumber || "";
+  const deviceType = request.device_type || (request as any).deviceType || "";
+  const issueType = request.issue_type || (request as any).issueType || "";
   
   const timeAgo = formatDistanceToNow(new Date(request.created_at), { addSuffix: true });
   const formattedDate = format(new Date(request.created_at), "PPpp");

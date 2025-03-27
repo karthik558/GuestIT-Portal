@@ -16,23 +16,7 @@ import { DatePickerWithRange } from "../ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { format, subDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { UserProfile } from "@/types/user";
-import { WifiRequest, RequestStatus } from "@/types/wifi-request";
-
-type RequestStatus = "pending" | "in-progress" | "completed" | "escalated";
-
-interface WifiRequest {
-  id: string;
-  name: string;
-  email: string;
-  room_number: string;
-  device_type: string;
-  issue_type: string;
-  description: string;
-  status: RequestStatus;
-  created_at: Date;
-  was_escalated?: boolean;
-  comments?: { text: string; timestamp: Date; user: string }[];
-}
+import { WifiRequest as WifiRequestType, RequestStatus as RequestStatusType } from "@/types/wifi-request";
 
 interface DashboardProps {
   userProfile: UserProfile | null;
@@ -41,9 +25,9 @@ interface DashboardProps {
 export function Dashboard({ userProfile }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("all");
   const [activeDashboardTab, setActiveDashboardTab] = useState("requests");
-  const [requests, setRequests] = useState<WifiRequest[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<WifiRequest[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<WifiRequest | null>(null);
+  const [requests, setRequests] = useState<WifiRequestType[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<WifiRequestType[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<WifiRequestType | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -166,7 +150,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
           ...request,
           created_at: new Date(request.created_at),
           was_escalated: wasEscalated
-        };
+        } as WifiRequestType;
       });
 
       setRequests(formattedRequests);
@@ -182,7 +166,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
     }
   };
 
-  const calculateStats = (allRequests: WifiRequest[]) => {
+  const calculateStats = (allRequests: WifiRequestType[]) => {
     let filteredByDate = [...allRequests].filter(request => 
       isDateInRange(new Date(request.created_at))
     );
@@ -200,7 +184,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
     setStats(statData);
   };
 
-  const handleViewDetails = async (request: WifiRequest) => {
+  const handleViewDetails = async (request: WifiRequestType) => {
     try {
       const { data: comments, error } = await supabase
         .from('request_comments')
@@ -224,7 +208,7 @@ export function Dashboard({ userProfile }: DashboardProps) {
     setIsDetailsOpen(true);
   };
 
-  const handleUpdateStatus = async (id: string, status: RequestStatus, comment?: string) => {
+  const handleUpdateStatus = async (id: string, status: RequestStatusType, comment?: string) => {
     try {
       const requestToUpdate = requests.find(r => r.id === id);
       const was_escalated = requestToUpdate?.status === "escalated" || requestToUpdate?.was_escalated;

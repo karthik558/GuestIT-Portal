@@ -23,9 +23,9 @@ interface WifiRequestCardProps {
 
 export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
   // Handle both property naming conventions (Supabase uses snake_case, frontend uses camelCase)
-  const roomNumber = request.room_number || request.roomNumber || "";
-  const deviceType = request.device_type || request.deviceType || "";
-  const issueType = request.issue_type || request.issueType || "";
+  const roomNumber = request.room_number || (request as any).roomNumber || "";
+  const deviceType = request.device_type || (request as any).deviceType || "";
+  const issueType = request.issue_type || (request as any).issueType || "";
 
   const getStatusColor = (status: RequestStatus, wasEscalated?: boolean) => {
     if (status === "completed" && wasEscalated) {
