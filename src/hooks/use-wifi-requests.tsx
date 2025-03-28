@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from "react-day-picker";
@@ -84,6 +85,7 @@ export function useWifiRequests() {
         filtered = filtered.filter(request => request.status === "in-progress");
       }
     } else {
+      // Only show active requests in the "all" tab (pending, in-progress, escalated)
       filtered = filtered.filter(r => 
         r.status === "pending" || r.status === "in-progress" || r.status === "escalated"
       );

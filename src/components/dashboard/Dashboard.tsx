@@ -94,14 +94,34 @@ export function Dashboard({ userProfile }: DashboardProps) {
       </div>
       
       <Tabs defaultValue="requests" value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="space-y-4">
-        <TabsList className={`w-full ${isMobile ? "grid grid-cols-2 md:grid-cols-4 gap-1" : ""}`}>
-          <TabsTrigger value="requests" className="min-w-0 px-2 flex-1">WiFi Requests</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-2 md:grid-cols-4 gap-1">
+          <TabsTrigger 
+            value="requests" 
+            className="min-w-0 px-2 flex-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+          >
+            WiFi Requests
+          </TabsTrigger>
           {userProfile?.role === 'admin' && (
-            <TabsTrigger value="users" className="min-w-0 px-2 flex-1">User Management</TabsTrigger>
+            <TabsTrigger 
+              value="users" 
+              className="min-w-0 px-2 flex-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+            >
+              User Management
+            </TabsTrigger>
           )}
-          <TabsTrigger value="reports" className="min-w-0 px-2 flex-1">Reports</TabsTrigger>
+          <TabsTrigger 
+            value="reports" 
+            className="min-w-0 px-2 flex-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+          >
+            Reports
+          </TabsTrigger>
           {userProfile?.role === 'admin' && (
-            <TabsTrigger value="settings" className="min-w-0 px-2 flex-1">Settings</TabsTrigger>
+            <TabsTrigger 
+              value="settings" 
+              className="min-w-0 px-2 flex-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+            >
+              Settings
+            </TabsTrigger>
           )}
         </TabsList>
         

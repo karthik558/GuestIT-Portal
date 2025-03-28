@@ -60,8 +60,10 @@ serve(async (req) => {
     
     const now = new Date()
     
-    // 1. Check pending requests older than 20 minutes
-    const pendingCutoff = new Date(now.getTime() - 20 * 60 * 1000) // 20 minutes ago
+    // 1. Check pending requests older than 20 minutes (configurable)
+    // Get the time threshold from settings or default to 20 minutes
+    const pendingThresholdMinutes = 20
+    const pendingCutoff = new Date(now.getTime() - pendingThresholdMinutes * 60 * 1000)
     
     const { data: pendingRequests, error: pendingError } = await supabaseClient
       .from('wifi_requests')
@@ -74,10 +76,12 @@ serve(async (req) => {
       throw new Error(`Error fetching pending requests: ${pendingError.message}`)
     }
     
-    console.log(`Found ${pendingRequests?.length || 0} pending requests older than 20 minutes`)
+    console.log(`Found ${pendingRequests?.length || 0} pending requests older than ${pendingThresholdMinutes} minutes`)
     
-    // 2. Check in-progress requests older than 45 minutes
-    const progressCutoff = new Date(now.getTime() - 45 * 60 * 1000) // 45 minutes ago
+    // 2. Check in-progress requests older than 45 minutes (configurable)
+    // Get the time threshold from settings or default to 45 minutes
+    const progressThresholdMinutes = 45
+    const progressCutoff = new Date(now.getTime() - progressThresholdMinutes * 60 * 1000)
     
     const { data: inProgressRequests, error: progressError } = await supabaseClient
       .from('wifi_requests')
@@ -90,7 +94,7 @@ serve(async (req) => {
       throw new Error(`Error fetching in-progress requests: ${progressError.message}`)
     }
     
-    console.log(`Found ${inProgressRequests?.length || 0} in-progress requests older than 45 minutes`)
+    console.log(`Found ${inProgressRequests?.length || 0} in-progress requests older than ${progressThresholdMinutes} minutes`)
     
     const requestsToEscalate = [...(pendingRequests || []), ...(inProgressRequests || [])]
     
@@ -108,10 +112,19 @@ serve(async (req) => {
     let escalatedCount = 0
     for (const request of requestsToEscalate) {
       try {
+        // Skip if already escalated
+        if (request.status === 'escalated') {
+          console.log(`Request ${request.id} already escalated, skipping`)
+          continue
+        }
+        
         // 1. Update the request status
         const { error: updateError } = await supabaseClient
           .from('wifi_requests')
-          .update({ status: 'escalated' })
+          .update({ 
+            status: 'escalated',
+            was_escalated: true
+          })
           .eq('id', request.id)
         
         if (updateError) {
@@ -120,7 +133,9 @@ serve(async (req) => {
         }
         
         // 2. Add a system comment about escalation
-        const wasStatus = request.status === 'pending' ? 'pending for 20+ minutes' : 'in progress for 45+ minutes'
+        const wasStatus = request.status === 'pending' ? 
+          `pending for ${pendingThresholdMinutes}+ minutes` : 
+          `in progress for ${progressThresholdMinutes}+ minutes`
         
         const { error: commentError } = await supabaseClient
           .from('request_comments')

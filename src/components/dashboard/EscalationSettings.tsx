@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Mail } from "lucide-react";
+import { X, Plus, Mail, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { EscalationSettings as EscalationSettingsType } from "@/types/escalation";
+import { Separator } from "@/components/ui/separator";
 
 export function EscalationSettings() {
   const [emails, setEmails] = useState<string[]>([]);
@@ -24,6 +25,8 @@ export function EscalationSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCronSetup, setIsCronSetup] = useState(false);
   const [isSettingUpCron, setIsSettingUpCron] = useState(false);
+  const [pendingThreshold, setPendingThreshold] = useState(20);
+  const [progressThreshold, setProgressThreshold] = useState(45);
 
   useEffect(() => {
     fetchEscalationSettings();
@@ -46,6 +49,15 @@ export function EscalationSettings() {
           ? data.emails.map(email => String(email)) 
           : [];
         setEmails(emailList);
+        
+        // Set escalation thresholds if available in settings
+        if (data.pending_threshold) {
+          setPendingThreshold(data.pending_threshold);
+        }
+        
+        if (data.progress_threshold) {
+          setProgressThreshold(data.progress_threshold);
+        }
       } else {
         setEmails([]);
       }
@@ -89,17 +101,23 @@ export function EscalationSettings() {
         throw checkError;
       }
       
+      const settingsData = {
+        emails: emails,
+        pending_threshold: pendingThreshold,
+        progress_threshold: progressThreshold
+      };
+      
       if (data) {
         const { error } = await supabase
           .from('escalation_settings')
-          .update({ emails: emails })
+          .update(settingsData)
           .eq('id', data.id);
           
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('escalation_settings')
-          .insert([{ emails: emails }]);
+          .insert([settingsData]);
           
         if (error) throw error;
       }
@@ -203,15 +221,63 @@ export function EscalationSettings() {
               </div>
             </div>
             
+            <Separator className="my-4" />
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <h3 className="text-lg font-medium">Escalation Timing Settings</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pending-threshold">
+                    Pending Request Threshold (minutes)
+                  </Label>
+                  <Input
+                    id="pending-threshold"
+                    type="number"
+                    min="1"
+                    max="300"
+                    value={pendingThreshold}
+                    onChange={(e) => setPendingThreshold(Number(e.target.value))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Requests will be escalated if they remain pending for longer than this time
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="progress-threshold">
+                    In-Progress Request Threshold (minutes)
+                  </Label>
+                  <Input
+                    id="progress-threshold"
+                    type="number"
+                    min="1"
+                    max="300"
+                    value={progressThreshold}
+                    onChange={(e) => setProgressThreshold(Number(e.target.value))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    In-progress requests will be escalated if they aren't completed within this time
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <Separator className="my-4" />
+            
             <div className="border-t pt-4">
               <Label className="mb-2 block">Automatic Escalation</Label>
               <div className="bg-accent/50 rounded-md p-4 text-sm space-y-2">
                 <p>When enabled, the system will automatically:</p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Escalate requests that remain <strong>pending</strong> for more than <strong>20 minutes</strong></li>
-                  <li>Escalate requests that remain <strong>in progress</strong> for more than <strong>45 minutes</strong></li>
+                  <li>Escalate requests that remain <strong>pending</strong> for more than <strong>{pendingThreshold} minutes</strong></li>
+                  <li>Escalate requests that remain <strong>in progress</strong> for more than <strong>{progressThreshold} minutes</strong></li>
                 </ul>
                 <p className="mt-2">Escalated requests will trigger email notifications to all configured addresses above.</p>
+                <p className="text-xs italic mt-2">Note: The escalation check runs automatically every 5 minutes.</p>
               </div>
               <div className="mt-3 flex justify-center sm:justify-start">
                 <Button 
