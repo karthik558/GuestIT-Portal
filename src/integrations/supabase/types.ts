@@ -107,6 +107,7 @@ export type Database = {
           room_number: string
           status: Database["public"]["Enums"]["request_status"]
           updated_at: string
+          was_escalated: boolean | null
         }
         Insert: {
           created_at?: string
@@ -119,6 +120,7 @@ export type Database = {
           room_number: string
           status?: Database["public"]["Enums"]["request_status"]
           updated_at?: string
+          was_escalated?: boolean | null
         }
         Update: {
           created_at?: string
@@ -131,6 +133,7 @@ export type Database = {
           room_number?: string
           status?: Database["public"]["Enums"]["request_status"]
           updated_at?: string
+          was_escalated?: boolean | null
         }
         Relationships: []
       }

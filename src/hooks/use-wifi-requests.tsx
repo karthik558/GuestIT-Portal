@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from "react-day-picker";
@@ -86,7 +85,7 @@ export function useWifiRequests() {
       }
     } else {
       filtered = filtered.filter(r => 
-        r.status !== "completed" || (r.status === "completed" && r.was_escalated)
+        r.status !== "completed" || r.status === "escalated"
       );
     }
     
