@@ -74,10 +74,10 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
     <header 
       ref={navbarRef}
       className={`border-b bg-background/95 backdrop-blur-sm sticky top-0 z-50 transition-all duration-200 ${
-        isScrolled ? "h-14 shadow-sm" : "h-16"
+        isScrolled ? "h-14" : "h-16"
       }`}
     >
-      <div className={`container flex items-center justify-between h-full py-2 transition-all duration-200`}>
+      <div className="w-full max-w-full mx-auto px-4 md:px-6 lg:px-8 flex items-center justify-between h-full">
         <div className="flex items-center gap-2 md:gap-4">
           <Link to="/" className="flex items-center gap-2">
             <img src="/favicon.png" alt="Logo" className={`transition-all duration-200 ${isScrolled ? "h-7 w-7" : "h-8 w-8"}`} />
@@ -87,25 +87,25 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
           </Link>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
           <CustomModeToggle />
           
           {isAdmin && isLoggedIn ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <User className="h-4 w-4 mr-2" />
-                  <span>Admin</span>
+                  <User className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Admin</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => navigate("/admin")}>
-                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  <LayoutDashboard className="h-4 w-4 mr-2 flex-shrink-0" />
                   Dashboard
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
+                  <LogOut className="h-4 w-4 mr-2 flex-shrink-0" />
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>

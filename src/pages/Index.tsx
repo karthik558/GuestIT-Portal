@@ -23,8 +23,8 @@ export default function Index() {
           className="min-h-[50vh]"
         />
         
-        <section className="py-8 md:py-12 px-4" id="guest-form">
-          <div className="container mx-auto max-w-7xl">
+        <section className="py-8 md:py-12 px-4 md:px-6 lg:px-8" id="guest-form">
+          <div className="mx-auto max-w-full md:max-w-6xl lg:max-w-7xl">
             <Tabs 
               value={activeTab} 
               onValueChange={setActiveTab}

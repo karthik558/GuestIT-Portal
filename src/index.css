@@ -127,7 +127,7 @@
   }
   
   .page-container {
-    @apply container mx-auto px-4 sm:px-6 py-8;
+    @apply container mx-auto px-4 sm:px-6 py-8 max-w-full md:max-w-6xl lg:max-w-7xl;
   }
   
   .form-container {

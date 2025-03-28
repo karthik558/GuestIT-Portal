@@ -1,8 +1,8 @@
 
 #root {
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0;
   text-align: center;
 }
 
@@ -108,4 +108,22 @@
 .dark {
   --primary: 262 35% 65%;
   --primary-foreground: 210 20% 98%; 
+}
+
+/* Responsive dashboard tabs for mobile */
+@media (max-width: 640px) {
+  .dashboard-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  
+  .dashboard-tabs > * {
+    flex: 1;
+    min-width: 45%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
