@@ -85,7 +85,7 @@ export function useWifiRequests() {
       }
     } else {
       filtered = filtered.filter(r => 
-        r.status !== "completed" || r.status === "escalated"
+        r.status === "pending" || r.status === "in-progress" || r.status === "escalated"
       );
     }
     
