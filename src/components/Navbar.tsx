@@ -114,19 +114,19 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
             <div className="flex items-center gap-2">
               {pathname !== "/admin" && (
                 <Button variant="outline" size="sm" onClick={() => navigate("/admin")}>
-                  <LayoutDashboard className="h-4 w-4 mr-2" />
-                  Dashboard
+                  <LayoutDashboard className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Dashboard</span>
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
+                <LogOut className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span className="whitespace-nowrap">Logout</span>
               </Button>
             </div>
           ) : pathname !== "/login" && (
             <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
-              <LogIn className="h-4 w-4 mr-2" />
-              Login
+              <LogIn className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="whitespace-nowrap">Login</span>
             </Button>
           )}
         </div>

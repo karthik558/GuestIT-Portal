@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -12,22 +13,22 @@ export default function Index() {
   const navigate = useNavigate();
   
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen w-full">
       <Navbar />
       
-      <main className="flex-1">
+      <main className="flex-1 w-full">
         <Hero
           title="Hotel WiFi Support Portal"
           subtitle="Experiencing issues with your WiFi connection? Our dedicated support team is here to help. Submit a request or track your existing request status."
           className="min-h-[50vh]"
         />
         
-        <section className="py-8 md:py-12" id="guest-form">
-          <div className="page-container">
+        <section className="py-8 md:py-12 px-4" id="guest-form">
+          <div className="container mx-auto max-w-7xl">
             <Tabs 
               value={activeTab} 
               onValueChange={setActiveTab}
-              className="max-w-3xl mx-auto"
+              className="mx-auto"
             >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="guest">Submit Request</TabsTrigger>
