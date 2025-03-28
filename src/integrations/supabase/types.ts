@@ -14,18 +14,24 @@ export type Database = {
           created_at: string
           emails: Json | null
           id: string
+          pending_threshold: number | null
+          progress_threshold: number | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           emails?: Json | null
           id?: string
+          pending_threshold?: number | null
+          progress_threshold?: number | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           emails?: Json | null
           id?: string
+          pending_threshold?: number | null
+          progress_threshold?: number | null
           updated_at?: string
         }
         Relationships: []

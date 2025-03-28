@@ -38,7 +38,7 @@ serve(async (req) => {
     // Get escalation settings
     const { data: escalationSettings, error: settingsError } = await supabaseClient
       .from('escalation_settings')
-      .select('emails')
+      .select('*')
       .single()
       
     if (settingsError) {
@@ -46,9 +46,14 @@ serve(async (req) => {
       throw new Error(`Error fetching escalation settings: ${settingsError.message}`)
     }
     
-    // Extract email list
+    // Extract email list and thresholds
     const emails = escalationSettings?.emails || []
+    const pendingThresholdMinutes = escalationSettings?.pending_threshold || 20
+    const progressThresholdMinutes = escalationSettings?.progress_threshold || 45
+    
     console.log("Escalation emails found:", emails)
+    console.log(`Pending threshold: ${pendingThresholdMinutes} minutes`)
+    console.log(`In-progress threshold: ${progressThresholdMinutes} minutes`)
     
     if (emails.length === 0) {
       console.log("No escalation emails configured, skipping escalation")
@@ -60,9 +65,7 @@ serve(async (req) => {
     
     const now = new Date()
     
-    // 1. Check pending requests older than 20 minutes (configurable)
-    // Get the time threshold from settings or default to 20 minutes
-    const pendingThresholdMinutes = 20
+    // 1. Check pending requests older than the threshold
     const pendingCutoff = new Date(now.getTime() - pendingThresholdMinutes * 60 * 1000)
     
     const { data: pendingRequests, error: pendingError } = await supabaseClient
@@ -78,9 +81,7 @@ serve(async (req) => {
     
     console.log(`Found ${pendingRequests?.length || 0} pending requests older than ${pendingThresholdMinutes} minutes`)
     
-    // 2. Check in-progress requests older than 45 minutes (configurable)
-    // Get the time threshold from settings or default to 45 minutes
-    const progressThresholdMinutes = 45
+    // 2. Check in-progress requests older than the threshold
     const progressCutoff = new Date(now.getTime() - progressThresholdMinutes * 60 * 1000)
     
     const { data: inProgressRequests, error: progressError } = await supabaseClient
