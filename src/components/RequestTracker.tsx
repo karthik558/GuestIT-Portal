@@ -1,9 +1,7 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -124,131 +122,154 @@ export function RequestTracker() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="space-y-2 text-center">
-        <h2 className="heading-2">Track Your Request</h2>
-        <p className="subtitle">
+    <div className="w-full max-w-3xl mx-auto p-4 space-y-6">
+      <div className="text-left space-y-2">
+        <h2 className="text-2xl font-bold tracking-tight">Track Your Request</h2>
+        <p className="text-muted-foreground">
           Enter your request ID to check the status and communicate with IT staff
         </p>
       </div>
       
-      <Separator />
-      
-      <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
-        <div className="flex-1 space-y-2 w-full">
-          <Label htmlFor="requestId">Request ID</Label>
-          <Input
-            id="requestId"
-            placeholder="Enter your request ID"
-            value={requestId}
-            onChange={(e) => setRequestId(e.target.value)}
-          />
-        </div>
-        <Button 
-          onClick={handleSearch} 
-          disabled={isLoading}
-          className="mb-[2px] w-full sm:w-auto"
-        >
-          {isLoading ? "Searching..." : "Track Request"}
-        </Button>
-      </div>
+      <Card className="border-none shadow-none">
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+            <div className="flex-1 space-y-2 w-full">
+              <Label htmlFor="requestId">Request ID</Label>
+              <Input
+                id="requestId"
+                placeholder="Enter your request ID"
+                value={requestId}
+                onChange={(e) => setRequestId(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Button 
+              onClick={handleSearch} 
+              disabled={isLoading}
+              className="w-full sm:w-auto"
+            >
+              {isLoading ? "Searching..." : "Track Request"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
       
       {request && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Request Details</span>
-                {getStatusBadge(request.status)}
-              </CardTitle>
-              <CardDescription>
-                Submitted on {formatDate(request.created_at)}
-              </CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl">Request Details</CardTitle>
+                  {getStatusBadge(request.status)}
+                </div>
+                <CardDescription>
+                  Submitted on {formatDate(request.created_at)}
+                </CardDescription>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm text-muted-foreground">Name</Label>
-                  <p className="font-medium">{request.name}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-muted-foreground">Email</Label>
-                  <p className="font-medium">{request.email}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-muted-foreground">Room Number</Label>
-                  <p className="font-medium">{request.room_number}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-muted-foreground">Device Type</Label>
-                  <p className="font-medium capitalize">{request.device_type}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-muted-foreground">Issue Type</Label>
-                  <p className="font-medium capitalize">{request.issue_type}</p>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid gap-4">
+                  {[
+                    { label: "Name", value: request.name },
+                    { label: "Email", value: request.email },
+                    { label: "Room Number", value: request.room_number },
+                    { label: "Device Type", value: request.device_type },
+                    { label: "Issue Type", value: request.issue_type },
+                  ].map((field, index) => (
+                    <div 
+                      key={index}
+                      className="bg-muted/50 p-3 rounded-md space-y-1"
+                    >
+                      <Label className="text-sm text-muted-foreground">
+                        {field.label}
+                      </Label>
+                      <p className="font-medium capitalize">
+                        {field.value}
+                      </p>
+                    </div>
+                  ))}
+                  
+                  {request.description && (
+                    <div className="bg-muted/50 p-3 rounded-md space-y-1">
+                      <Label className="text-sm text-muted-foreground">
+                        Description
+                      </Label>
+                      <p className="whitespace-pre-wrap text-sm">
+                        {request.description}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
-              
-              {request.description && (
-                <div>
-                  <Label className="text-sm text-muted-foreground">Description</Label>
-                  <p className="whitespace-pre-wrap">{request.description}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
           
           <Card>
-            <CardHeader>
-              <CardTitle>Communication</CardTitle>
-              <CardDescription>
-                Stay updated on your request status
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4 max-h-[300px] overflow-y-auto">
-                {comments.length > 0 ? (
-                  comments.map((comment, index) => (
-                    <div 
-                      key={index} 
-                      className={`p-3 rounded-lg ${
-                        comment.user_name === "Guest" 
-                          ? "bg-accent ml-8" 
-                          : "bg-primary/10 mr-8"
-                      }`}
-                    >
-                      <div className="flex justify-between mb-1">
-                        <p className="font-medium text-sm">
-                          {comment.user_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(comment.created_at)}
-                        </p>
-                      </div>
-                      <p className="whitespace-pre-wrap">{comment.comment_text}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center text-muted-foreground">No comments yet</p>
-                )}
+            <CardHeader className="pb-4">
+              <div className="flex flex-col space-y-2">
+                <CardTitle className="text-xl">Communication</CardTitle>
+                <CardDescription>
+                  Stay updated on your request status
+                </CardDescription>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="comment">Add Comment</Label>
-                <Textarea
-                  id="comment"
-                  placeholder="Type your message here..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  rows={3}
-                />
-                <Button 
-                  onClick={handleAddComment} 
-                  disabled={isLoading || !comment.trim()}
-                  className="w-full mt-2"
-                >
-                  {isLoading ? "Sending..." : "Send Message"}
-                </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-muted/50 p-3 rounded-md">
+                  <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                    {comments.length > 0 ? (
+                      comments.map((comment, index) => (
+                        <div 
+                          key={index} 
+                          className={`p-4 rounded-lg ${
+                            comment.user_name === "Guest" 
+                              ? "bg-accent" 
+                              : "bg-muted"
+                          }`}
+                        >
+                          <div className="flex justify-between items-center mb-2">
+                            <Label className="text-sm text-muted-foreground">
+                              {comment.user_name}
+                            </Label>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(comment.created_at)}
+                            </span>
+                          </div>
+                          <p className="whitespace-pre-wrap text-sm font-medium">
+                            {comment.comment_text}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-left text-muted-foreground py-4">
+                        No comments yet
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-muted/50 p-3 rounded-md space-y-3">
+                  <Label className="text-sm text-muted-foreground">
+                    Add Comment
+                  </Label>
+                  <Textarea
+                    id="comment"
+                    placeholder="Type your message here..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    rows={3}
+                    className="resize-none bg-background"
+                  />
+                  <Button 
+                    onClick={handleAddComment} 
+                    disabled={isLoading || !comment.trim()}
+                    className="w-full"
+                  >
+                    {isLoading ? "Sending..." : "Send Message"}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
