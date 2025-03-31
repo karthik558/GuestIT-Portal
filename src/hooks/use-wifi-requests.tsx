@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from "react-day-picker";
@@ -48,13 +47,22 @@ export function useWifiRequests() {
     if (!date || !date.from) return true;
     
     try {
+      const checkDate = new Date(dateToCheck);
+      checkDate.setHours(0, 0, 0, 0);
+      
+      const startDate = new Date(date.from);
+      startDate.setHours(0, 0, 0, 0);
+      
       if (date.from && !date.to) {
-        return dateToCheck >= date.from;
+        return checkDate >= startDate;
       }
       
-      return isWithinInterval(dateToCheck, {
-        start: date.from,
-        end: date.to || date.from
+      const endDate = new Date(date.to || date.from);
+      endDate.setHours(23, 59, 59, 999);
+      
+      return isWithinInterval(checkDate, {
+        start: startDate,
+        end: endDate
       });
     } catch (error) {
       console.error("Error checking date range:", error);
