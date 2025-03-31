@@ -17,7 +17,7 @@ export default function Index() {
       
       <main className="flex-1 w-full">
         <Hero
-          title="Hotel WiFi Support Portal"
+          title="Guest IT Support Portal"
           subtitle="Experiencing issues with your WiFi connection? Our dedicated support team is here to help. Submit a request or track your existing request status."
           className="min-h-[50vh]"
         />

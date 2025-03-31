@@ -82,7 +82,6 @@ export function Navbar({ isAdmin = false }: NavbarProps) {
           <Link to="/" className="flex items-center gap-2">
             <img src="/favicon.png" alt="Logo" className={`transition-all duration-200 ${isScrolled ? "h-7 w-7" : "h-8 w-8"}`} />
             <span className={`font-bold hidden sm:inline-block transition-all duration-200 ${isScrolled ? "text-lg" : "text-xl"}`}>
-              WiFi Support
             </span>
           </Link>
         </div>
