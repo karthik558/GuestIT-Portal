@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -26,23 +25,25 @@ export default function Index() {
         <section className="py-8 md:py-12 px-4 md:px-6 lg:px-8" id="guest-form">
           <div className="mx-auto max-w-full md:max-w-6xl lg:max-w-7xl">
             <Tabs 
-              value={activeTab} 
-              onValueChange={setActiveTab}
-              className="mx-auto"
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="guest">Submit Request</TabsTrigger>
-                <TabsTrigger value="track">Track Request</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="guest" className="mt-8">
-                <GuestForm />
-              </TabsContent>
-              
-              <TabsContent value="track" className="mt-8">
-                <RequestTracker />
-              </TabsContent>
-            </Tabs>
+                value={activeTab} 
+                onValueChange={setActiveTab}
+                className="mx-auto"
+              >
+                <div className="flex justify-center">
+                  <TabsList className="inline-flex w-auto">
+                    <TabsTrigger value="guest">Submit Request</TabsTrigger>
+                    <TabsTrigger value="track">Track Request</TabsTrigger>
+                  </TabsList>
+                </div>
+                
+                <TabsContent value="guest" className="mt-8">
+                  <GuestForm />
+                </TabsContent>
+                
+                <TabsContent value="track" className="mt-8">
+                  <RequestTracker />
+                </TabsContent>
+              </Tabs>
           </div>
         </section>
       </main>
