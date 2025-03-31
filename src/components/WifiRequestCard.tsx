@@ -77,10 +77,7 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
   const timeAgo = formatDistanceToNow(new Date(request.created_at), { addSuffix: true });
 
   return (
-    <Card 
-      className="relative overflow-hidden transition-all duration-200 hover:shadow-lg animate-scale-in group cursor-pointer"
-      onClick={onClick}
-    >
+    <Card className="relative overflow-hidden transition-all duration-200 hover:shadow-lg animate-scale-in group">
       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
       
       <CardHeader className="pb-2">
@@ -143,10 +140,7 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
       <CardFooter>
         <Button 
           variant="outline"
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent double triggering
-            onClick?.();
-          }}
+          onClick={onClick}
           className="w-full transition-all duration-200 hover:bg-primary hover:text-primary-foreground"
         >
           View Details
