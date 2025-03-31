@@ -173,7 +173,7 @@ export function RequestTracker() {
                 <div className="grid gap-4">
                   {[
                     { label: "Name", value: request.name },
-                    { label: "Email", value: request.email },
+                    { label: "Email", value: request.email, noCapitalize: true },
                     { label: "Room Number", value: request.room_number },
                     { label: "Device Type", value: request.device_type },
                     { label: "Issue Type", value: request.issue_type },
@@ -185,7 +185,7 @@ export function RequestTracker() {
                       <Label className="text-sm text-muted-foreground">
                         {field.label}
                       </Label>
-                      <p className="font-medium capitalize">
+                      <p className={`font-medium ${!field.noCapitalize ? 'capitalize' : ''}`}>
                         {field.value}
                       </p>
                     </div>
