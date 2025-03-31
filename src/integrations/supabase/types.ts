@@ -9,33 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      escalation_settings: {
-        Row: {
-          created_at: string
-          emails: Json | null
-          id: string
-          pending_threshold: number | null
-          progress_threshold: number | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          emails?: Json | null
-          id?: string
-          pending_threshold?: number | null
-          progress_threshold?: number | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          emails?: Json | null
-          id?: string
-          pending_threshold?: number | null
-          progress_threshold?: number | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           can_escalate: boolean | null
@@ -46,6 +19,7 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
           team: string | null
           updated_at: string
+          email: string | null
         }
         Insert: {
           can_escalate?: boolean | null
@@ -56,6 +30,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           team?: string | null
           updated_at?: string
+          email?: string | null
         }
         Update: {
           can_escalate?: boolean | null
@@ -66,6 +41,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           team?: string | null
           updated_at?: string
+          email?: string | null
         }
         Relationships: []
       }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +51,86 @@ export function AdminUsers() {
     fetchUsers();
   }, []);
 
+  const handleSubmit = async () => {
+    try {
+      if (editingUser) {
+        // Update existing user
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            role: formData.role,
+            first_name: formData.name,
+            team: formData.team,
+            can_escalate: formData.can_escalate,
+            email: formData.email,
+          })
+          .eq('id', editingUser.id);
+        
+        if (profileError) throw profileError;
+        
+        toast.success("User updated successfully");
+      } else {
+        // Create new user
+        if (!formData.email || !formData.password) {
+          toast.error("Email and password are required");
+          return;
+        }
+        
+        // Create the user through Supabase's built-in signup
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              first_name: formData.name,
+            }
+          }
+        });
+        
+        if (signUpError) {
+          toast.error("Failed to create user account", {
+            description: signUpError.message
+          });
+          return;
+        }
+        
+        if (!authData.user) {
+          toast.error("Failed to create user - no user returned");
+          return;
+        }
+        
+        // Create or update the profile with additional information
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            first_name: formData.name,
+            role: formData.role,
+            team: formData.team,
+            can_escalate: formData.can_escalate,
+            email: formData.email,
+          });
+        
+        if (profileError) {
+          toast.error("User created but profile update failed", {
+            description: profileError.message
+          });
+        } else {
+          toast.success("User created successfully", {
+            description: "An email confirmation has been sent."
+          });
+        }
+      }
+      
+      setIsDialogOpen(false);
+      fetchUsers();
+    } catch (error) {
+      console.error("Error saving user:", error);
+      const message = error instanceof Error ? error.message : "Failed to save user";
+      toast.error(message);
+    }
+  };
+
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
@@ -67,12 +146,12 @@ export function AdminUsers() {
         
         if (profilesError) throw profilesError;
         
-        // Format profiles without auth data
+        // Format profiles with better display names
         const formattedUsers = profiles.map(profile => {
           return {
             id: profile.id,
-            name: profile.first_name || 'Unknown',
-            email: "User ID: " + profile.id.substring(0, 8) + "...",
+            name: profile.first_name || 'Unnamed User',
+            email: profile.email || '',
             role: (profile.role as UserRole) || 'user',
             team: profile.team || '',
             can_escalate: profile.can_escalate || false,
@@ -97,13 +176,13 @@ export function AdminUsers() {
         userProfiles.set(profile.id, profile);
       });
       
-      // Create combined user list
+      // Create combined user list with full information
       const formattedUsers = authData.users.map(user => {
         const profile = userProfiles.get(user.id);
         return {
           id: user.id,
-          name: profile?.first_name || user.user_metadata?.name || 'Unknown',
-          email: user.email || "No email",
+          name: profile?.first_name || user.user_metadata?.name || 'Unnamed User',
+          email: user.email || profile?.email || '',
           role: (profile?.role as UserRole) || 'user',
           team: profile?.team || '',
           can_escalate: profile?.can_escalate || false,
@@ -111,14 +190,19 @@ export function AdminUsers() {
       });
       
       setUsers(formattedUsers);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching users:", error);
+      const message = error instanceof Error ? error.message : "Please try again later";
       toast.error("Failed to load users", {
-        description: error.message || "Please try again later",
+        description: message
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleChange = (field: string, value: string | boolean | UserRole) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleEditUser = (user: AssignmentProps) => {
@@ -145,84 +229,6 @@ export function AdminUsers() {
       can_escalate: false,
     });
     setIsDialogOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    try {
-      if (editingUser) {
-        // Update existing user
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            role: formData.role,
-            first_name: formData.name,
-            team: formData.team,
-            can_escalate: formData.can_escalate,
-          })
-          .eq('id', editingUser.id);
-        
-        if (profileError) throw profileError;
-        
-        toast.success("User updated successfully");
-      } else {
-        // Create new user
-        if (!formData.email || !formData.password) {
-          toast.error("Email and password are required");
-          return;
-        }
-        
-        // First, create the user in Auth
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          email_confirm: true, // Auto-confirm email
-          user_metadata: {
-            name: formData.name
-          }
-        });
-        
-        if (authError) {
-          toast.error("Failed to create user account", {
-            description: authError.message
-          });
-          return;
-        }
-        
-        if (!authData.user) {
-          toast.error("Failed to create user - no user returned");
-          return;
-        }
-        
-        // Then update the profile with additional information
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            role: formData.role,
-            first_name: formData.name,
-            team: formData.team,
-            can_escalate: formData.can_escalate,
-          })
-          .eq('id', authData.user.id);
-        
-        if (profileError) {
-          toast.error("User created but profile update failed", {
-            description: profileError.message
-          });
-        } else {
-          toast.success("User created successfully");
-        }
-      }
-      
-      setIsDialogOpen(false);
-      fetchUsers();
-    } catch (error: any) {
-      console.error("Error saving user:", error);
-      toast.error(error.message || "Failed to save user");
-    }
-  };
-
-  const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -262,21 +268,21 @@ export function AdminUsers() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email / ID</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Team</TableHead>
-                <TableHead>Escalation</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-left">Name</TableHead>
+                <TableHead className="text-left">Email / ID</TableHead>
+                <TableHead className="text-left">Role</TableHead>
+                <TableHead className="text-left">Team</TableHead>
+                <TableHead className="text-left">Escalation</TableHead>
+                <TableHead className="text-left">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length > 0 ? (
                 users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{user.email}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-left">{user.name}</TableCell>
+                    <TableCell className="text-left max-w-[200px] truncate">{user.email}</TableCell>
+                    <TableCell className="text-left">
                       <Badge 
                         variant={user.role === 'admin' ? 'default' : 'outline'}
                         className={user.role === 'admin' ? 'bg-primary' : ''}
@@ -284,14 +290,14 @@ export function AdminUsers() {
                         {user.role}
                       </Badge>
                     </TableCell>
-                    <TableCell>{user.team || 'N/A'}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-left">{user.team || 'N/A'}</TableCell>
+                    <TableCell className="text-left">
                       {user.can_escalate ? 
                         <Badge className="bg-green-600">Allowed</Badge> : 
                         <Badge variant="outline">Not allowed</Badge>
                       }
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-left">
                       <Button 
                         variant="ghost" 
                         size="sm" 
