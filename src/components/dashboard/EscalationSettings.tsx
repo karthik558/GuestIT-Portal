@@ -156,7 +156,7 @@ export function EscalationSettings() {
           <Mail className="mr-2 h-5 w-5" />
           Escalation Email Settings
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-left">
           Configure email addresses that will receive notifications when a request is escalated
         </CardDescription>
       </CardHeader>
@@ -168,7 +168,7 @@ export function EscalationSettings() {
           </div>
         ) : (
           <>
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 text-left">
               <div className="flex-1 space-y-1">
                 <Label htmlFor="new-email">Add Email Address</Label>
                 <Input
@@ -194,7 +194,7 @@ export function EscalationSettings() {
             </div>
             
             <div>
-              <Label>Current Escalation Emails</Label>
+              {/* <Label>Current Escalation Emails</Label> */}
               <div className="mt-2 border rounded-md p-4 min-h-[100px]">
                 {emails.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -229,7 +229,7 @@ export function EscalationSettings() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2 text-left">
                   <Label htmlFor="pending-threshold">
                     Pending Request Threshold (minutes)
                   </Label>
@@ -246,7 +246,7 @@ export function EscalationSettings() {
                   </p>
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-2 text-left">
                   <Label htmlFor="progress-threshold">
                     In-Progress Request Threshold (minutes)
                   </Label>
@@ -268,7 +268,7 @@ export function EscalationSettings() {
             <Separator className="my-4" />
             
             <div className="border-t pt-4">
-              <Label className="mb-2 block">Automatic Escalation</Label>
+              <Label className="mb-2 block text-left">Automatic Escalation</Label>
               <div className="bg-accent/50 rounded-md p-4 text-sm space-y-2 text-left">
                 <p>When enabled, the system will automatically:</p>
                 <ul className="list-disc pl-5 space-y-1">

@@ -56,46 +56,40 @@ export function RequestsTab({
   return (
     <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div className="w-full sm:w-auto">
-          <div className="flex justify-start">
-            <TabsList className={`${isMobile ? "grid grid-cols-3 gap-1" : "inline-flex"} sm:w-auto`}>
-              <TabsTrigger value="all" className="rounded-md px-3 py-1.5">
-                Active
-              </TabsTrigger>
-              <TabsTrigger value="pending" className="rounded-md px-3 py-1.5">
-                Pending
-              </TabsTrigger>
-              <TabsTrigger value="in-progress" className="rounded-md px-3 py-1.5">
-                In Progress
-              </TabsTrigger>
-              {!isMobile && (
-                <>
-                  <TabsTrigger value="completed" className="rounded-md px-3 py-1.5">
-                    Completed
-                  </TabsTrigger>
-                  <TabsTrigger value="escalated" className="rounded-md px-3 py-1.5">
-                    Escalated
-                  </TabsTrigger>
-                </>
-              )}
-            </TabsList>
-          </div>
-        </div>
-        
-        {isMobile && (
-          <div className="w-full">
-            <div className="flex justify-start">
-              <TabsList className="grid grid-cols-2 gap-1 w-full">
+        <div className="flex flex-col gap-2 w-full sm:w-auto">
+          <TabsList className={isMobile ? "grid grid-cols-3 gap-1" : ""}>
+            <TabsTrigger value="all" className="rounded-md px-3 py-1.5">
+              Active
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="rounded-md px-3 py-1.5">
+              Pending
+            </TabsTrigger>
+            <TabsTrigger value="in-progress" className="rounded-md px-3 py-1.5">
+              In Progress
+            </TabsTrigger>
+            {!isMobile && (
+              <>
                 <TabsTrigger value="completed" className="rounded-md px-3 py-1.5">
                   Completed
                 </TabsTrigger>
                 <TabsTrigger value="escalated" className="rounded-md px-3 py-1.5">
                   Escalated
                 </TabsTrigger>
-              </TabsList>
-            </div>
-          </div>
-        )}
+              </>
+            )}
+          </TabsList>
+          
+          {isMobile && (
+            <TabsList className="grid grid-cols-2 gap-1">
+              <TabsTrigger value="completed" className="rounded-md px-3 py-1.5">
+                Completed
+              </TabsTrigger>
+              <TabsTrigger value="escalated" className="rounded-md px-3 py-1.5">
+                Escalated
+              </TabsTrigger>
+            </TabsList>
+          )}
+        </div>
 
         <Button 
           variant="outline" 

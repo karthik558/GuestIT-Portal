@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -93,7 +92,7 @@ export function ReportGenerator() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
         <div className="space-y-2">
           <label htmlFor="report-type" className="text-sm font-medium">
             Report Type
@@ -112,41 +111,39 @@ export function ReportGenerator() {
           </Select>
         </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-medium">Date Range</label>
-          <div className="flex space-x-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="justify-start text-left font-normal w-full md:w-[240px] border-primary/20 focus-visible:ring-primary"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                      </>
-                    ) : (
-                      format(dateRange.from, "LLL dd, y")
-                    )
+        <div className="space-y-2">
+          <label className="text-sm font-medium block">Date Range</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal border-primary/20 focus-visible:ring-primary"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange.from ? (
+                  dateRange.to ? (
+                    <>
+                      {format(dateRange.from, "LLL dd, y")} -{" "}
+                      {format(dateRange.to, "LLL dd, y")}
+                    </>
                   ) : (
-                    <span>Pick a date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={dateRange}
-                  onSelect={setDateRange as any}
-                  initialFocus
-                  className="rounded-md border"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+                    format(dateRange.from, "LLL dd, y")
+                  )
+                ) : (
+                  <span>Pick a date range</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={setDateRange as any}
+                initialFocus
+                className="rounded-md border"
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 

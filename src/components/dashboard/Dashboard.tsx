@@ -93,8 +93,8 @@ export function Dashboard({ userProfile }: DashboardProps) {
       </div>
 
       <Tabs defaultValue="requests" value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="space-y-4">
-        <div className="w-full flex justify-start">
-          <TabsList className="inline-flex">
+        <div className="flex justify-start">
+          <TabsList>
             <TabsTrigger 
               value="requests" 
               className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"

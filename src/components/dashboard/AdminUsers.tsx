@@ -229,7 +229,7 @@ export function AdminUsers() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">User Management</h2>
+          {/* <h2 className="text-2xl font-bold">User Management</h2> */}
           <p className="text-muted-foreground">Manage user access and permissions</p>
         </div>
         
@@ -252,8 +252,6 @@ export function AdminUsers() {
           </Button>
         </div>
       </div>
-      
-      <Separator />
       
       {isLoading ? (
         <div className="flex justify-center p-8">
