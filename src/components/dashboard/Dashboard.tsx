@@ -93,36 +93,38 @@ export function Dashboard({ userProfile }: DashboardProps) {
       </div>
 
       <Tabs defaultValue="requests" value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="space-y-4">
-        <TabsList className="bg-muted/50 p-1 rounded-lg flex sm:inline-flex">
-          <TabsTrigger 
-            value="requests" 
-            className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-          >
-            WiFi Requests
-          </TabsTrigger>
-          {userProfile?.role === 'admin' && (
+        <div className="w-full flex justify-start">
+          <TabsList className="inline-flex">
             <TabsTrigger 
-              value="users" 
+              value="requests" 
               className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
-              User Management
+              WiFi Requests
             </TabsTrigger>
-          )}
-          <TabsTrigger 
-            value="reports" 
-            className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-          >
-            Reports
-          </TabsTrigger>
-          {userProfile?.role === 'admin' && (
+            {userProfile?.role === 'admin' && (
+              <TabsTrigger 
+                value="users" 
+                className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                User Management
+              </TabsTrigger>
+            )}
             <TabsTrigger 
-              value="settings" 
+              value="reports" 
               className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
-              Settings
+              Reports
             </TabsTrigger>
-          )}
-        </TabsList>
+            {userProfile?.role === 'admin' && (
+              <TabsTrigger 
+                value="settings" 
+                className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                Settings
+              </TabsTrigger>
+            )}
+          </TabsList>
+        </div>
         
         <TabsContent value="requests" className="m-0 space-y-4">
           <RequestsTab 

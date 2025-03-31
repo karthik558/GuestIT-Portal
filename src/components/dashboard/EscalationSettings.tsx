@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -270,14 +269,14 @@ export function EscalationSettings() {
             
             <div className="border-t pt-4">
               <Label className="mb-2 block">Automatic Escalation</Label>
-              <div className="bg-accent/50 rounded-md p-4 text-sm space-y-2">
+              <div className="bg-accent/50 rounded-md p-4 text-sm space-y-2 text-left">
                 <p>When enabled, the system will automatically:</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Escalate requests that remain <strong>pending</strong> for more than <strong>{pendingThreshold} minutes</strong></li>
                   <li>Escalate requests that remain <strong>in progress</strong> for more than <strong>{progressThreshold} minutes</strong></li>
                 </ul>
-                <p className="mt-2">Escalated requests will trigger email notifications to all configured addresses above.</p>
-                <p className="text-xs italic mt-2">Note: The escalation check runs automatically every 5 minutes.</p>
+                <p className="mt-2 text-left">Escalated requests will trigger email notifications to all configured addresses above.</p>
+                <p className="text-xs italic mt-2 text-left">Note: The escalation check runs automatically every 5 minutes.</p>
               </div>
               <div className="mt-3 flex justify-center sm:justify-start">
                 <Button 
