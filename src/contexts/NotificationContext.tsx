@@ -1,5 +1,4 @@
-
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -8,28 +7,36 @@ type NotificationContextType = {
   requestPermission: () => Promise<boolean>;
 };
 
-const NotificationContext = createContext<NotificationContextType>({
+export const NotificationContext = createContext<NotificationContextType>({
   hasPermission: false,
   requestPermission: async () => false,
 });
 
-export const useNotifications = () => useContext(NotificationContext);
-
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
   const [hasPermission, setHasPermission] = useState(false);
+  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
-    // Check if the browser supports notifications
-    if (!("Notification" in window)) {
-      console.log("This browser does not support notifications");
+    // Check if the browser supports service workers and notifications
+    if (!("serviceWorker" in navigator)) {
+      console.log("This browser does not support service workers");
       return;
     }
 
-    // Check if permission was already granted
-    if (Notification.permission === "granted") {
-      setHasPermission(true);
-    }
+    // Register service worker
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        setSwRegistration(registration);
+        if (Notification.permission === "granted") {
+          setHasPermission(true);
+        }
+      })
+      .catch(error => {
+        console.error('Service Worker registration failed:', error);
+      });
+  }, []);
 
+  useEffect(() => {
     // Subscribe to realtime changes on the wifi_requests table
     const subscribeToRequests = async () => {
       const { data: authData } = await supabase.auth.getSession();
@@ -42,24 +49,22 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
             event: 'INSERT', 
             schema: 'public', 
             table: 'wifi_requests' 
-          }, (payload) => {
-            // Show notification if permission granted
-            if (Notification.permission === "granted") {
-              // Play sound
-              const audio = new Audio('/notification-sound.mp3');
-              audio.play();
+          }, async (payload) => {
+            // Show notification if permission granted and service worker is registered
+            if (hasPermission && swRegistration) {
+              try {
+                await swRegistration.showNotification('New WiFi Support Request', {
+                  body: `New request from ${payload.new.name} in room ${payload.new.room_number}`,
+                  icon: '/favicon.png',
+                  silent: false,
+                  data: { sound: '/notification-sound.mp3' }
+                });
 
-              // Show notification
-              const notification = new Notification('New WiFi Support Request', {
-                body: `New request from ${payload.new.name} in room ${payload.new.room_number}`,
-                icon: '/favicon.png'
-              });
-
-              // Open dashboard when notification is clicked
-              notification.onclick = () => {
-                window.focus();
-                window.location.href = '/admin';
-              };
+                const audio = new Audio('/notification-sound.mp3');
+                await audio.play().catch(e => console.error("Error playing notification sound:", e));
+              } catch (error) {
+                console.error("Error showing notification:", error);
+              }
             }
 
             // Show toast regardless of notification permission
@@ -75,14 +80,14 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       }
     };
 
-    if (hasPermission) {
+    if (hasPermission && swRegistration) {
       subscribeToRequests();
     }
-  }, [hasPermission]);
+  }, [hasPermission, swRegistration]);
 
   const requestPermission = async (): Promise<boolean> => {
-    if (!("Notification" in window)) {
-      toast.error("Notifications are not supported in this browser");
+    if (!("serviceWorker" in navigator)) {
+      toast.error("Service workers are not supported in this browser");
       return false;
     }
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 
 interface NotificationOptions {
@@ -11,8 +10,9 @@ interface NotificationOptions {
 export function useNotifications() {
   const [permission, setPermission] = useState<NotificationPermission | "default">("default");
   const [notificationAudio, setNotificationAudio] = useState<HTMLAudioElement | null>(null);
+  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
-  // Initialize notification sound on mount (client-side only)
+  // Initialize notification sound and service worker on mount (client-side only)
   useEffect(() => {
     if (typeof window === "undefined") return;
     
@@ -23,19 +23,25 @@ export function useNotifications() {
       setNotificationAudio(audio);
     }
     
-    // Check notification permission on mount
-    if (!("Notification" in window)) {
-      console.log("This browser does not support desktop notification");
-      return;
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+          setSwRegistration(registration);
+          setPermission(Notification.permission);
+        })
+        .catch(error => {
+          console.error('Service Worker registration failed:', error);
+        });
+    } else {
+      console.log("Service workers are not supported");
     }
-
-    setPermission(Notification.permission);
   }, []);
 
   // Request notification permission
   const requestPermission = async () => {
-    if (!("Notification" in window)) {
-      console.log("This browser does not support desktop notification");
+    if (!('serviceWorker' in navigator)) {
+      console.log("Service workers are not supported");
       return false;
     }
 
@@ -55,27 +61,30 @@ export function useNotifications() {
   };
 
   // Show notification
-  const showNotification = ({ title, body, icon = "/favicon.png", sound = true }: NotificationOptions) => {
-    if (!("Notification" in window)) {
-      console.log("This browser does not support desktop notification");
+  const showNotification = async ({ title, body, icon = "/favicon.png", sound = true }: NotificationOptions) => {
+    if (!swRegistration) {
+      console.log("Service Worker is not registered yet");
       return;
     }
 
     if (Notification.permission !== "granted") {
-      requestPermission().then(granted => {
-        if (granted) {
-          new Notification(title, { body, icon });
-          if (sound && notificationAudio) {
-            notificationAudio.play().catch(e => console.error("Error playing notification sound:", e));
-          }
-        }
-      });
-      return;
+      const granted = await requestPermission();
+      if (!granted) return;
     }
 
-    new Notification(title, { body, icon });
-    if (sound && notificationAudio) {
-      notificationAudio.play().catch(e => console.error("Error playing notification sound:", e));
+    try {
+      await swRegistration.showNotification(title, {
+        body,
+        icon,
+        silent: !sound,
+        data: { sound: sound ? '/notification-sound.mp3' : undefined }
+      });
+      
+      if (sound && notificationAudio) {
+        await notificationAudio.play().catch(e => console.error("Error playing notification sound:", e));
+      }
+    } catch (error) {
+      console.error("Error showing notification:", error);
     }
   };
 
