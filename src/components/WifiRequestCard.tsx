@@ -1,11 +1,9 @@
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { WifiRequest, RequestStatus } from "@/types/wifi-request";
-import { Copy } from "lucide-react";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 interface WifiRequestCardProps {
   request: WifiRequest | {
@@ -25,16 +23,10 @@ interface WifiRequestCardProps {
 }
 
 export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
-  // Handle both property naming conventions with proper typing
-  const roomNumber = ('room_number' in request ? request.room_number : request.roomNumber) || "";
-  const deviceType = ('device_type' in request ? request.device_type : request.deviceType) || "";
-  const issueType = ('issue_type' in request ? request.issue_type : request.issueType) || "";
-
-  const handleCopyId = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(request.id);
-    toast.success("Tracking ID copied to clipboard");
-  };
+  // Handle both property naming conventions (Supabase uses snake_case, frontend uses camelCase)
+  const roomNumber = request.room_number || (request as any).roomNumber || "";
+  const deviceType = request.device_type || (request as any).deviceType || "";
+  const issueType = request.issue_type || (request as any).issueType || "";
 
   const getStatusColor = (status: RequestStatus, wasEscalated?: boolean) => {
     if (status === "completed" && wasEscalated) {
@@ -77,71 +69,44 @@ export function WifiRequestCard({ request, onClick }: WifiRequestCardProps) {
   const timeAgo = formatDistanceToNow(new Date(request.created_at), { addSuffix: true });
 
   return (
-    <Card className="relative overflow-hidden transition-all duration-200 hover:shadow-lg animate-scale-in group">
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-      
+    <Card className="card-hover overflow-hidden animate-scale-in">
       <CardHeader className="pb-2">
         <div className="flex flex-wrap justify-between items-center gap-2">
-          <CardTitle className="text-lg font-semibold line-clamp-1">
-            {request.name}
-          </CardTitle>
-          <Badge 
-            variant="outline" 
-            className={cn(
-              "transition-colors duration-200",
-              getStatusColor(request.status, request.was_escalated),
-              "text-white"
-            )}
-          >
+          <CardTitle className="text-lg line-clamp-1">{request.name}</CardTitle>
+          <Badge variant="outline" className={`${getStatusColor(request.status, request.was_escalated)} text-white`}>
             {getStatusText(request.status, request.was_escalated)}
           </Badge>
         </div>
       </CardHeader>
-
-      <CardContent className="space-y-4 pb-2">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground font-medium">Room</p>
+      <CardContent className="pb-2">
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <p className="text-muted-foreground">Room:</p>
             <p className="font-medium line-clamp-1">{roomNumber}</p>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground font-medium">Device</p>
+          <div>
+            <p className="text-muted-foreground">Device:</p>
             <p className="font-medium capitalize line-clamp-1">{deviceType}</p>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground font-medium">Issue</p>
+          <div>
+            <p className="text-muted-foreground">Issue:</p>
             <p className="font-medium capitalize line-clamp-1">{issueType}</p>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground font-medium">Submitted</p>
+          <div>
+            <p className="text-muted-foreground">Submitted:</p>
             <p className="font-medium line-clamp-1">{timeAgo}</p>
           </div>
-        </div>
-
-        <div className="p-3 bg-muted/50 rounded-lg border transition-colors duration-200 hover:bg-muted">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground font-medium mb-0.5">Tracking ID</p>
-              <p className="font-mono text-sm font-medium truncate">{request.id}</p>
-            </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={handleCopyId}
-              className="h-8 w-8 transition-transform hover:scale-105 active:scale-95"
-            >
-              <Copy className="h-4 w-4" />
-              <span className="sr-only">Copy tracking ID</span>
-            </Button>
+          <div>
+            <p className="text-muted-foreground">Tracking ID:</p>
+            <p className="font-mono text-xs line-clamp-1">{request.id}</p>
           </div>
         </div>
       </CardContent>
-
       <CardFooter>
         <Button 
-          variant="outline"
-          onClick={onClick}
-          className="w-full transition-all duration-200 hover:bg-primary hover:text-primary-foreground"
+          variant="outline" 
+          onClick={onClick} 
+          className="w-full"
         >
           View Details
         </Button>
