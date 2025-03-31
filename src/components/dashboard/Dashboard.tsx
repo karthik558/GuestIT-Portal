@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -92,33 +91,33 @@ export function Dashboard({ userProfile }: DashboardProps) {
           {isLoading ? "Processing..." : "Check for Escalations"}
         </Button>
       </div>
-      
+
       <Tabs defaultValue="requests" value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="space-y-4">
-        <TabsList className="w-full grid grid-cols-2 md:grid-cols-4 gap-1">
+        <TabsList className="bg-muted/50 p-1 rounded-lg flex sm:inline-flex">
           <TabsTrigger 
             value="requests" 
-            className="min-w-0 px-2 flex-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+            className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             WiFi Requests
           </TabsTrigger>
           {userProfile?.role === 'admin' && (
             <TabsTrigger 
               value="users" 
-              className="min-w-0 px-2 flex-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+              className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
               User Management
             </TabsTrigger>
           )}
           <TabsTrigger 
             value="reports" 
-            className="min-w-0 px-2 flex-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+            className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
           >
             Reports
           </TabsTrigger>
           {userProfile?.role === 'admin' && (
             <TabsTrigger 
               value="settings" 
-              className="min-w-0 px-2 flex-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+              className="rounded-md px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
               Settings
             </TabsTrigger>

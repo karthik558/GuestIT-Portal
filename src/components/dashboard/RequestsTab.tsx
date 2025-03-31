@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,14 +57,24 @@ export function RequestsTab({
     <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div className="w-full sm:w-auto">
-          <TabsList className={`grid ${isMobile ? "grid-cols-3 gap-1" : "grid-cols-5"} w-full`}>
-            <TabsTrigger value="all">Active</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+          <TabsList className={`grid sm:inline-flex ${isMobile ? "grid-cols-3 gap-1" : ""} w-full sm:w-auto`}>
+            <TabsTrigger value="all" className="rounded-md px-3 py-1.5">
+              Active
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="rounded-md px-3 py-1.5">
+              Pending
+            </TabsTrigger>
+            <TabsTrigger value="in-progress" className="rounded-md px-3 py-1.5">
+              In Progress
+            </TabsTrigger>
             {!isMobile && (
               <>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="escalated">Escalated</TabsTrigger>
+                <TabsTrigger value="completed" className="rounded-md px-3 py-1.5">
+                  Completed
+                </TabsTrigger>
+                <TabsTrigger value="escalated" className="rounded-md px-3 py-1.5">
+                  Escalated
+                </TabsTrigger>
               </>
             )}
           </TabsList>
@@ -74,12 +83,16 @@ export function RequestsTab({
         {isMobile && (
           <div className="w-full">
             <TabsList className="grid grid-cols-2 gap-1 w-full">
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-              <TabsTrigger value="escalated">Escalated</TabsTrigger>
+              <TabsTrigger value="completed" className="rounded-md px-3 py-1.5">
+                Completed
+              </TabsTrigger>
+              <TabsTrigger value="escalated" className="rounded-md px-3 py-1.5">
+                Escalated
+              </TabsTrigger>
             </TabsList>
           </div>
         )}
-        
+
         <Button 
           variant="outline" 
           onClick={fetchRequests} 
